@@ -1,15 +1,17 @@
 package com.bgsoftware.superiorskyblock.nms;
 
 import com.bgsoftware.superiorskyblock.api.island.Island;
-import com.bgsoftware.superiorskyblock.world.blocks.BlockData;
-import com.bgsoftware.superiorskyblock.world.chunks.CalculatedChunk;
-import com.bgsoftware.superiorskyblock.world.chunks.ChunkPosition;
+import com.bgsoftware.superiorskyblock.core.SchematicBlock;
+import com.bgsoftware.superiorskyblock.core.CalculatedChunk;
+import com.bgsoftware.superiorskyblock.core.ChunkPosition;
 import org.bukkit.Chunk;
 import org.bukkit.block.Biome;
 import org.bukkit.entity.Player;
 
+import javax.annotation.Nullable;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
 public interface NMSChunks {
@@ -18,16 +20,16 @@ public interface NMSChunks {
 
     void deleteChunks(Island island, List<ChunkPosition> chunkPositions, Runnable onFinish);
 
-    CompletableFuture<List<CalculatedChunk>> calculateChunks(List<ChunkPosition> chunkPositions);
+    CompletableFuture<List<CalculatedChunk>> calculateChunks(List<ChunkPosition> chunkPositions,
+                                                             Map<ChunkPosition, CalculatedChunk> unloadedChunksCache);
 
     void injectChunkSections(Chunk chunk);
 
     boolean isChunkEmpty(Chunk chunk);
 
-    void refreshChunk(Chunk chunk);
+    void refreshLights(Chunk chunk, List<SchematicBlock> blockData);
 
-    void refreshLights(Chunk chunk, List<BlockData> blockData);
-
+    @Nullable
     Chunk getChunkIfLoaded(ChunkPosition chunkPosition);
 
     void startTickingChunk(Island island, Chunk chunk, boolean stop);

@@ -1,29 +1,28 @@
 package com.bgsoftware.superiorskyblock.commands.player;
 
-import com.bgsoftware.superiorskyblock.lang.Message;
 import com.bgsoftware.superiorskyblock.SuperiorSkyblockPlugin;
 import com.bgsoftware.superiorskyblock.api.island.Island;
 import com.bgsoftware.superiorskyblock.api.island.PlayerRole;
 import com.bgsoftware.superiorskyblock.api.wrappers.SuperiorPlayer;
-import com.bgsoftware.superiorskyblock.commands.CommandArguments;
 import com.bgsoftware.superiorskyblock.commands.CommandTabCompletes;
 import com.bgsoftware.superiorskyblock.commands.ISuperiorCommand;
-import com.bgsoftware.superiorskyblock.island.SPlayerRole;
-import com.bgsoftware.superiorskyblock.lang.PlayerLocales;
-import com.bgsoftware.superiorskyblock.utils.StringUtils;
-import com.bgsoftware.superiorskyblock.threads.Executor;
+import com.bgsoftware.superiorskyblock.commands.arguments.CommandArguments;
+import com.bgsoftware.superiorskyblock.core.formatting.Formatters;
+import com.bgsoftware.superiorskyblock.core.messages.Message;
+import com.bgsoftware.superiorskyblock.core.threads.BukkitExecutor;
+import com.bgsoftware.superiorskyblock.island.role.SPlayerRole;
+import com.bgsoftware.superiorskyblock.player.PlayerLocales;
 import org.bukkit.command.CommandSender;
 
-import java.util.ArrayList;
+import java.time.Duration;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 
-public final class CmdTeam implements ISuperiorCommand {
+public class CmdTeam implements ISuperiorCommand {
 
     @Override
     public List<String> getAliases() {
@@ -65,12 +64,12 @@ public final class CmdTeam implements ISuperiorCommand {
     @Override
     public void execute(SuperiorSkyblockPlugin plugin, CommandSender sender, String[] args) {
         Island island = (args.length == 1 ? CommandArguments.getSenderIsland(plugin, sender) :
-                CommandArguments.getIsland(plugin, sender, args[1])).getKey();
+                CommandArguments.getIsland(plugin, sender, args[1])).getIsland();
 
         if (island == null)
             return;
 
-        Executor.async(() -> {
+        BukkitExecutor.async(() -> {
             java.util.Locale locale = PlayerLocales.getLocale(sender);
             StringBuilder infoMessage = new StringBuilder();
 
@@ -96,7 +95,7 @@ public final class CmdTeam implements ISuperiorCommand {
                     boolean onlinePlayer = islandMember.isOnline() && islandMember.isShownAsOnline();
                     rolesStrings.get(playerRole).append(Message.ISLAND_TEAM_STATUS_ROLES.getMessage(locale, playerRole,
                             islandMember.getName(), onlinePlayer ? onlineStatus : offlineStatus,
-                            StringUtils.formatTime(locale, time, TimeUnit.SECONDS))).append("\n");
+                            Formatters.TIME_FORMATTER.format(Duration.ofSeconds(time), locale))).append("\n");
                 });
 
                 rolesStrings.keySet().stream()
@@ -114,7 +113,7 @@ public final class CmdTeam implements ISuperiorCommand {
     @Override
     public List<String> tabComplete(SuperiorSkyblockPlugin plugin, CommandSender sender, String[] args) {
         return args.length == 2 ? CommandTabCompletes.getPlayerIslandsExceptSender(plugin, sender, args[1],
-                plugin.getSettings().isTabCompleteHideVanished()) : new ArrayList<>();
+                plugin.getSettings().isTabCompleteHideVanished()) : Collections.emptyList();
     }
 
 }

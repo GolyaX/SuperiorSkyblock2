@@ -1,21 +1,20 @@
 package com.bgsoftware.superiorskyblock.commands.admin;
 
-import com.bgsoftware.superiorskyblock.lang.Message;
 import com.bgsoftware.superiorskyblock.SuperiorSkyblockPlugin;
 import com.bgsoftware.superiorskyblock.api.enums.Rating;
 import com.bgsoftware.superiorskyblock.api.island.Island;
 import com.bgsoftware.superiorskyblock.api.wrappers.SuperiorPlayer;
-import com.bgsoftware.superiorskyblock.commands.CommandArguments;
 import com.bgsoftware.superiorskyblock.commands.CommandTabCompletes;
 import com.bgsoftware.superiorskyblock.commands.IAdminIslandCommand;
-import com.bgsoftware.superiorskyblock.utils.StringUtils;
+import com.bgsoftware.superiorskyblock.commands.arguments.CommandArguments;
+import com.bgsoftware.superiorskyblock.core.formatting.Formatters;
+import com.bgsoftware.superiorskyblock.core.messages.Message;
 import org.bukkit.command.CommandSender;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-public final class CmdAdminSetRate implements IAdminIslandCommand {
+public class CmdAdminSetRate implements IAdminIslandCommand {
     @Override
     public List<String> getAliases() {
         return Collections.singletonList("setrate");
@@ -72,15 +71,21 @@ public final class CmdAdminSetRate implements IAdminIslandCommand {
         if (rating == null)
             return;
 
-        island.setRating(targetPlayer, rating);
-
-        Message.RATE_CHANGE_OTHER.send(sender, targetPlayer.getName(), StringUtils.format(rating.name()));
+        if (rating == Rating.UNKNOWN) {
+            if (plugin.getEventsBus().callIslandRemoveRatingEvent(sender, superiorPlayer, island)) {
+                island.removeRating(targetPlayer);
+                Message.RATE_REMOVE_ALL.send(sender, targetPlayer.getName());
+            }
+        } else if (plugin.getEventsBus().callIslandRateEvent(sender, superiorPlayer, island, rating)) {
+            island.setRating(targetPlayer, rating);
+            Message.RATE_CHANGE_OTHER.send(sender, targetPlayer.getName(), Formatters.CAPITALIZED_FORMATTER.format(rating.name()));
+        }
     }
 
     @Override
     public List<String> adminTabComplete(SuperiorSkyblockPlugin plugin, CommandSender sender, Island island, String[] args) {
         return args.length == 4 ? CommandTabCompletes.getRatedPlayers(plugin, island, args[3]) :
-                args.length == 5 ? CommandTabCompletes.getRatings(args[4]) : new ArrayList<>();
+                args.length == 5 ? CommandTabCompletes.getRatings(args[4]) : Collections.emptyList();
     }
 
 }

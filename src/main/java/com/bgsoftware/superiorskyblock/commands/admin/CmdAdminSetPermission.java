@@ -1,23 +1,22 @@
 package com.bgsoftware.superiorskyblock.commands.admin;
 
-import com.bgsoftware.superiorskyblock.lang.Message;
 import com.bgsoftware.superiorskyblock.SuperiorSkyblockPlugin;
 import com.bgsoftware.superiorskyblock.api.island.Island;
 import com.bgsoftware.superiorskyblock.api.island.IslandPrivilege;
 import com.bgsoftware.superiorskyblock.api.island.PlayerRole;
 import com.bgsoftware.superiorskyblock.api.wrappers.SuperiorPlayer;
-import com.bgsoftware.superiorskyblock.commands.CommandArguments;
 import com.bgsoftware.superiorskyblock.commands.CommandTabCompletes;
 import com.bgsoftware.superiorskyblock.commands.IAdminIslandCommand;
-import com.bgsoftware.superiorskyblock.utils.StringUtils;
-import com.bgsoftware.superiorskyblock.threads.Executor;
+import com.bgsoftware.superiorskyblock.commands.arguments.CommandArguments;
+import com.bgsoftware.superiorskyblock.core.formatting.Formatters;
+import com.bgsoftware.superiorskyblock.core.messages.Message;
 import org.bukkit.command.CommandSender;
 
-import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
-public final class CmdAdminSetPermission implements IAdminIslandCommand {
+public class CmdAdminSetPermission implements IAdminIslandCommand {
 
     @Override
     public List<String> getAliases() {
@@ -76,20 +75,31 @@ public final class CmdAdminSetPermission implements IAdminIslandCommand {
         if (playerRole == null)
             return;
 
-        Executor.data(() -> islands.forEach(island -> island.setPermission(playerRole, islandPrivilege)));
+        boolean anyPrivilegesChanged = false;
+
+        for (Island island : islands) {
+            if (!plugin.getEventsBus().callIslandChangeRolePrivilegeEvent(island, playerRole))
+                continue;
+
+            anyPrivilegesChanged = true;
+            island.setPermission(playerRole, islandPrivilege);
+        }
+
+        if (!anyPrivilegesChanged)
+            return;
 
         if (islands.size() > 1)
-            Message.PERMISSION_CHANGED_ALL.send(sender, StringUtils.format(islandPrivilege.getName()));
+            Message.PERMISSION_CHANGED_ALL.send(sender, Formatters.CAPITALIZED_FORMATTER.format(islandPrivilege.getName()));
         else if (targetPlayer == null)
-            Message.PERMISSION_CHANGED_NAME.send(sender, StringUtils.format(islandPrivilege.getName()), islands.get(0).getName());
+            Message.PERMISSION_CHANGED_NAME.send(sender, Formatters.CAPITALIZED_FORMATTER.format(islandPrivilege.getName()), islands.get(0).getName());
         else
-            Message.PERMISSION_CHANGED.send(sender, StringUtils.format(islandPrivilege.getName()), targetPlayer.getName());
+            Message.PERMISSION_CHANGED.send(sender, Formatters.CAPITALIZED_FORMATTER.format(islandPrivilege.getName()), targetPlayer.getName());
     }
 
     @Override
     public List<String> adminTabComplete(SuperiorSkyblockPlugin plugin, CommandSender sender, Island island, String[] args) {
         return args.length == 4 ? CommandTabCompletes.getIslandPrivileges(args[3]) :
-                args.length == 5 ? CommandTabCompletes.getPlayerRoles(plugin, args[4]) : new ArrayList<>();
+                args.length == 5 ? CommandTabCompletes.getPlayerRoles(plugin, args[4]) : Collections.emptyList();
     }
 
 }

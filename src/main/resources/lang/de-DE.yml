@@ -45,6 +45,9 @@ BLOCK_LEVEL_WORTHLESS: '&e&lLevel | &7Der Block {0} ist wertlos.'
 BLOCK_VALUE: '&e&lWert | &7Der Block {0} im Wert von {1}.'
 BLOCK_VALUE_WORTHLESS: '&e&lWert | &7Der Block {0} ist wertlos.'
 BONUS_SET_SUCCESS: '&e&lInsel | &7Der Inselbonus wurde erfolgreich auf {0} aktualisiert.'
+BONUS_SYNC_ALL: '&e&lIsland | &7Successfully synced the island bonus to all the islands'
+BONUS_SYNC_NAME: '&e&lIsland | &7Successfully synced the island bonus to {0}.'
+BONUS_SYNC: '&e&lIsland | &7Successfully synced the island bonus to {0}''s island.'
 BORDER_PLAYER_COLOR_NAME_BLUE: Blau
 BORDER_PLAYER_COLOR_NAME_RED: Rot
 BORDER_PLAYER_COLOR_NAME_GREEN: Grün
@@ -155,6 +158,7 @@ COMMAND_ARGUMENT_ALL_ISLANDS: '*'
 COMMAND_ARGUMENT_ALL_PLAYERS: '*'
 COMMAND_ARGUMENT_AMOUNT: Betrag
 COMMAND_ARGUMENT_BIOME: biom
+COMMAND_ARGUMENT_BORDER_COLOR: 'border-color'
 COMMAND_ARGUMENT_COMMAND: Befehl...
 COMMAND_ARGUMENT_DISCORD: Discord...
 COMMAND_ARGUMENT_EFFECT: Trank-Effekt
@@ -461,6 +465,7 @@ INTERACT_OUTSIDE_ISLAND: '&c&lError | &7Du kannst außerhalb der Border nicht in
 INVALID_AMOUNT: '&c&lError | &7Ungültiger Betrag {0}.'
 INVALID_BIOME: '&c&lError | &7Ungültiges Biom {0}.'
 INVALID_BLOCK: '&c&lError | &7Ungültige Blockposition {0}.'
+INVALID_BORDER_COLOR: '&c&lError | &7Invalid border color {0}.'
 INVALID_EFFECT: '&c&lError | &7Ungültige Wirkung {0}.'
 INVALID_ENTITY: '&c&lError | &7Ungültige Entität {0}.'
 INVALID_ENVIRONMENT: '&c&lError | &7Ungültige Welt {0}.'
@@ -605,6 +610,7 @@ ISLAND_PREVIEW_START: |
   &e&lVorschau | &7Gebe &a&lCONFIRM &7 ein, um eine neue Insel zu erstellen, oder &c&lCANCEL &7, um den Vorschaumodus abzubrechen.
   &e&lVorschau | &7Du kannst das Inselgebiet nicht verlassen, sonst wird der Vorschaumodus automatisch abgebrochen.
 ISLAND_PROTECTED: '&c&lError | &7Diese Insel ist geschützt.'
+ISLAND_PROTECTED_OPPED: '&7&oYou can bypass this restriction by using "/is admin bypass".'
 ISLAND_TEAM_STATUS_FOOTER: ''
 ISLAND_TEAM_STATUS_HEADER: '&e&lInsel | &7Mitglieder von {0}´s Insel &8[&e{1}&8/&e{2}&8]&7:'
 ISLAND_TEAM_STATUS_OFFLINE: '&c(Offline)'
@@ -765,6 +771,8 @@ PERMISSIONS_RESET_PLAYER: '&e&lInsel | &7Alle Berechtigungen für {0} erfolgreic
   Standardwerte zurückgesetzt!'
 PERMISSIONS_RESET_ROLES: '&e&lInsel | &7Alle Berechtigungen der Insel erfolgreich
   auf Standardwerte zurücksetzen!'
+PLACEHOLDER_NO: 'No'
+PLACEHOLDER_YES: 'Yes'
 PLAYER_ALREADY_BANNED: '&c&lFehler | &7Dieser Spieler ist bereits gesperrt.'
 PLAYER_ALREADY_COOP: '&c&lError | &7Dieser Spieler ist bereits kooperativ.'
 PLAYER_ALREADY_IN_ISLAND: '&c&lError | &7Dieser Spieler befindet sich bereits auf
@@ -889,6 +897,7 @@ TRANSFER_ALREADY_LEADER: '&c&lError | &7Du bist bereits der Anführer dieser Ins
 TRANSFER_BROADCAST: '&e&lInsel | &7Die Führung der Insel wurde auf {0} übertragen.'
 UNBAN_ANNOUNCEMENT: '&e&lInsel | &7{0} wurde von {1} von der Insel ENTFERNT.'
 UNCOOP_ANNOUNCEMENT: '&e&lInsel | &7{0} hat {1} als Genossenschaftsmitglied entfernt.'
+UNCOOP_AUTO_ANNOUNCEMENT: '&e&lIsland | &7There are no island members online and therefore you were un-cooped automatically.'
 UNCOOP_LEFT_ANNOUNCEMENT: '&e&lInsel | &7{0} hat das Spiel verlassen und ist kein
   Koop-Mitglied mehr.'
 UNIGNORED_ISLAND: '&e&lInsel | Die Insel von &7{0} wird jetzt nicht mehr von den Top-Inseln
@@ -956,4 +965,5 @@ WITHDRAW_ANNOUNCEMENT: '&e&lBank | &7{0} withdrawn ${1} from the island bank!'
 WITHDRAW_ERROR: '&c&lError | &7{0}.'
 WITHDRAWN_MONEY: '&e&lBank | &7You withdrawn ${0} from {1}''s island bank!'
 WITHDRAWN_MONEY_NAME: '&e&lBank | &7Du hast ${0} von der Inselbank von {1} abgehoben!'
+WORLD_NOT_ENABLED: '&e&lWorlds | &7This world is not enabled on the server.'
 WORLD_NOT_UNLOCKED: '&e&lWorlds | &7Die Welt {0} ist noch nicht freigeschaltet!'

@@ -1,21 +1,21 @@
 package com.bgsoftware.superiorskyblock.commands.admin;
 
-import com.bgsoftware.superiorskyblock.lang.Message;
 import com.bgsoftware.superiorskyblock.SuperiorSkyblockPlugin;
 import com.bgsoftware.superiorskyblock.api.modules.PluginModule;
+import com.bgsoftware.superiorskyblock.commands.CommandTabCompletes;
 import com.bgsoftware.superiorskyblock.commands.ISuperiorCommand;
+import com.bgsoftware.superiorskyblock.core.debug.PluginDebugger;
+import com.bgsoftware.superiorskyblock.core.messages.Message;
 import com.bgsoftware.superiorskyblock.module.BuiltinModules;
-import com.bgsoftware.superiorskyblock.lang.PlayerLocales;
-import com.bgsoftware.superiorskyblock.utils.debug.PluginDebugger;
+import com.bgsoftware.superiorskyblock.player.PlayerLocales;
 import org.bukkit.command.CommandSender;
 
 import java.io.File;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.stream.Collectors;
+import java.util.Locale;
 
-public final class CmdAdminModules implements ISuperiorCommand {
+public class CmdAdminModules implements ISuperiorCommand {
 
     @Override
     public List<String> getAliases() {
@@ -76,7 +76,7 @@ public final class CmdAdminModules implements ISuperiorCommand {
 
                 Message.MODULE_INFO.send(sender, pluginModule.getName(), pluginModule.getAuthor(), "");
             } else {
-                String command = args[3].toLowerCase();
+                String command = args[3].toLowerCase(Locale.ENGLISH);
 
                 switch (command) {
                     case "load":
@@ -124,10 +124,7 @@ public final class CmdAdminModules implements ISuperiorCommand {
 
     @Override
     public List<String> tabComplete(SuperiorSkyblockPlugin plugin, CommandSender sender, String[] args) {
-        return args.length != 3 ? new ArrayList<>() : plugin.getModules().getModules().stream()
-                .map(PluginModule::getName)
-                .filter(name -> name.toLowerCase().startsWith(args[2]))
-                .collect(Collectors.toList());
+        return args.length != 3 ? Collections.emptyList() : CommandTabCompletes.getModules(plugin, args[2]);
     }
 
 }

@@ -1,21 +1,20 @@
 package com.bgsoftware.superiorskyblock.commands.player;
 
-import com.bgsoftware.superiorskyblock.lang.Message;
 import com.bgsoftware.superiorskyblock.SuperiorSkyblockPlugin;
 import com.bgsoftware.superiorskyblock.api.island.Island;
 import com.bgsoftware.superiorskyblock.api.wrappers.SuperiorPlayer;
-import com.bgsoftware.superiorskyblock.commands.CommandArguments;
 import com.bgsoftware.superiorskyblock.commands.CommandTabCompletes;
 import com.bgsoftware.superiorskyblock.commands.ISuperiorCommand;
-import com.bgsoftware.superiorskyblock.island.permissions.IslandPrivileges;
+import com.bgsoftware.superiorskyblock.commands.arguments.CommandArguments;
+import com.bgsoftware.superiorskyblock.core.messages.Message;
+import com.bgsoftware.superiorskyblock.island.privilege.IslandPrivileges;
 import org.bukkit.Location;
 import org.bukkit.command.CommandSender;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-public final class CmdVisit implements ISuperiorCommand {
+public class CmdVisit implements ISuperiorCommand {
 
     @Override
     public List<String> getAliases() {
@@ -56,14 +55,14 @@ public final class CmdVisit implements ISuperiorCommand {
 
     @Override
     public void execute(SuperiorSkyblockPlugin plugin, CommandSender sender, String[] args) {
-        Island targetIsland = CommandArguments.getIsland(plugin, sender, args[1]).getKey();
+        Island targetIsland = CommandArguments.getIsland(plugin, sender, args[1]).getIsland();
 
         if (targetIsland == null)
             return;
 
         SuperiorPlayer superiorPlayer = plugin.getPlayers().getSuperiorPlayer(sender);
 
-        Location visitLocation = targetIsland.getVisitorsLocation();
+        Location visitLocation = targetIsland.getVisitorsLocation(null /* unused */);
 
         if (visitLocation == null) {
             Message.INVALID_VISIT_LOCATION.send(sender);
@@ -88,9 +87,9 @@ public final class CmdVisit implements ISuperiorCommand {
         SuperiorPlayer superiorPlayer = plugin.getPlayers().getSuperiorPlayer(sender);
         return args.length == 2 ? CommandTabCompletes.getOnlinePlayersWithIslands(plugin, args[1],
                 plugin.getSettings().isTabCompleteHideVanished(),
-                (onlinePlayer, onlineIsland) -> onlineIsland != null && (onlineIsland.getVisitorsLocation() != null ||
+                (onlinePlayer, onlineIsland) -> onlineIsland != null && (onlineIsland.getVisitorsLocation(null /* unused */) != null ||
                         superiorPlayer.hasBypassModeEnabled()) && (!onlineIsland.isLocked() ||
-                        onlineIsland.hasPermission(superiorPlayer, IslandPrivileges.CLOSE_BYPASS))) : new ArrayList<>();
+                        onlineIsland.hasPermission(superiorPlayer, IslandPrivileges.CLOSE_BYPASS))) : Collections.emptyList();
     }
 
 }

@@ -1,21 +1,19 @@
 package com.bgsoftware.superiorskyblock.commands.player;
 
-import com.bgsoftware.superiorskyblock.lang.Message;
 import com.bgsoftware.superiorskyblock.SuperiorSkyblockPlugin;
 import com.bgsoftware.superiorskyblock.api.island.Island;
 import com.bgsoftware.superiorskyblock.api.island.PlayerRole;
 import com.bgsoftware.superiorskyblock.api.wrappers.SuperiorPlayer;
-import com.bgsoftware.superiorskyblock.commands.CommandArguments;
 import com.bgsoftware.superiorskyblock.commands.CommandTabCompletes;
 import com.bgsoftware.superiorskyblock.commands.ISuperiorCommand;
+import com.bgsoftware.superiorskyblock.commands.arguments.CommandArguments;
+import com.bgsoftware.superiorskyblock.core.formatting.Formatters;
+import com.bgsoftware.superiorskyblock.core.messages.Message;
+import com.bgsoftware.superiorskyblock.island.privilege.IslandPrivileges;
 import com.bgsoftware.superiorskyblock.module.BuiltinModules;
-import com.bgsoftware.superiorskyblock.lang.PlayerLocales;
-import com.bgsoftware.superiorskyblock.utils.StringUtils;
-import com.bgsoftware.superiorskyblock.island.permissions.IslandPrivileges;
-import com.bgsoftware.superiorskyblock.wrappers.SBlockPosition;
+import com.bgsoftware.superiorskyblock.player.PlayerLocales;
 import org.bukkit.command.CommandSender;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
@@ -23,7 +21,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public final class CmdShow implements ISuperiorCommand {
+public class CmdShow implements ISuperiorCommand {
 
     @Override
     public List<String> getAliases() {
@@ -64,8 +62,8 @@ public final class CmdShow implements ISuperiorCommand {
 
     @Override
     public void execute(SuperiorSkyblockPlugin plugin, CommandSender sender, String[] args) {
-        Island island = args.length == 1 ? CommandArguments.getIslandWhereStanding(plugin, sender).getKey() :
-                CommandArguments.getIsland(plugin, sender, args[1]).getKey();
+        Island island = args.length == 1 ? CommandArguments.getIslandWhereStanding(plugin, sender).getIsland() :
+                CommandArguments.getIsland(plugin, sender, args[1]).getIsland();
 
         if (island == null)
             return;
@@ -81,13 +79,14 @@ public final class CmdShow implements ISuperiorCommand {
         if (!Message.ISLAND_INFO_NAME.isEmpty(locale) && !island.getName().isEmpty())
             infoMessage.append(Message.ISLAND_INFO_NAME.getMessage(locale, island.getName())).append("\n");
         if (!Message.ISLAND_INFO_LOCATION.isEmpty(locale))
-            infoMessage.append(Message.ISLAND_INFO_LOCATION.getMessage(locale,
-                    SBlockPosition.of(island.getCenter(plugin.getSettings().getWorlds().getDefaultWorld())))).append("\n");
+            infoMessage.append(Message.ISLAND_INFO_LOCATION.getMessage(locale, Formatters.LOCATION_FORMATTER.format(
+                    island.getCenter(plugin.getSettings().getWorlds().getDefaultWorld())))).append("\n");
         if (!Message.ISLAND_INFO_CREATION_TIME.isEmpty(locale))
             infoMessage.append(Message.ISLAND_INFO_CREATION_TIME.getMessage(locale, island.getCreationTimeDate())).append("\n");
         if (!Message.ISLAND_INFO_RATE.isEmpty(locale)) {
             double rating = island.getTotalRating();
-            infoMessage.append(Message.ISLAND_INFO_RATE.getMessage(locale, StringUtils.formatRating(locale, rating), StringUtils.format(rating), island.getRatingAmount())).append("\n");
+            infoMessage.append(Message.ISLAND_INFO_RATE.getMessage(locale, Formatters.RATING_FORMATTER.format(rating, locale),
+                    Formatters.NUMBER_FORMATTER.format(rating), island.getRatingAmount())).append("\n");
         }
         if (BuiltinModules.BANK.isEnabled()) {
             if (!Message.ISLAND_INFO_BANK.isEmpty(locale))
@@ -137,7 +136,7 @@ public final class CmdShow implements ISuperiorCommand {
     @Override
     public List<String> tabComplete(SuperiorSkyblockPlugin plugin, CommandSender sender, String[] args) {
         return args.length == 2 ? CommandTabCompletes.getPlayerIslandsExceptSender(plugin, sender, args[1],
-                plugin.getSettings().isTabCompleteHideVanished()) : new ArrayList<>();
+                plugin.getSettings().isTabCompleteHideVanished()) : Collections.emptyList();
     }
 
 }

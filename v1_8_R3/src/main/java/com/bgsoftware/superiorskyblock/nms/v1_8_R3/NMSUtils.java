@@ -2,14 +2,15 @@ package com.bgsoftware.superiorskyblock.nms.v1_8_R3;
 
 import com.bgsoftware.common.reflection.ReflectField;
 import com.bgsoftware.superiorskyblock.SuperiorSkyblockPlugin;
+import com.bgsoftware.superiorskyblock.core.debug.PluginDebugger;
 import com.bgsoftware.superiorskyblock.tag.CompoundTag;
-import com.bgsoftware.superiorskyblock.utils.debug.PluginDebugger;
 import com.google.common.collect.Maps;
 import net.minecraft.server.v1_8_R3.Block;
 import net.minecraft.server.v1_8_R3.BlockPosition;
 import net.minecraft.server.v1_8_R3.Chunk;
 import net.minecraft.server.v1_8_R3.ChunkCoordIntPair;
 import net.minecraft.server.v1_8_R3.ChunkProviderServer;
+import net.minecraft.server.v1_8_R3.ChunkRegionLoader;
 import net.minecraft.server.v1_8_R3.ChunkSection;
 import net.minecraft.server.v1_8_R3.EntityHuman;
 import net.minecraft.server.v1_8_R3.EntityPlayer;
@@ -19,16 +20,18 @@ import net.minecraft.server.v1_8_R3.NBTTagCompound;
 import net.minecraft.server.v1_8_R3.Packet;
 import net.minecraft.server.v1_8_R3.PlayerChunkMap;
 import net.minecraft.server.v1_8_R3.TileEntity;
+import net.minecraft.server.v1_8_R3.World;
 import net.minecraft.server.v1_8_R3.WorldServer;
 
-import java.util.ArrayList;
 import java.util.Collection;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
-public final class NMSUtils {
+public class NMSUtils {
 
     private static final SuperiorSkyblockPlugin plugin = SuperiorSkyblockPlugin.getPlugin();
 
@@ -42,10 +45,10 @@ public final class NMSUtils {
     }
 
     public static void runActionOnChunks(WorldServer worldServer, Collection<ChunkCoordIntPair> chunksCoords,
-                                         boolean saveChunks, Runnable onFinish, Consumer<Chunk> chunkConsumer,
+                                         boolean saveChunks, Runnable onFinish, BiConsumer<Chunk, Boolean> chunkConsumer,
                                          Consumer<Chunk> updateChunk) {
-        List<ChunkCoordIntPair> unloadedChunks = new ArrayList<>();
-        List<Chunk> loadedChunks = new ArrayList<>();
+        List<ChunkCoordIntPair> unloadedChunks = new LinkedList<>();
+        List<Chunk> loadedChunks = new LinkedList<>();
 
         chunksCoords.forEach(chunkCoords -> {
             Chunk chunk = worldServer.getChunkIfLoaded(chunkCoords.x, chunkCoords.z);
@@ -59,7 +62,7 @@ public final class NMSUtils {
 
         boolean hasUnloadedChunks = !unloadedChunks.isEmpty();
 
-        loadedChunks.forEach(chunkConsumer);
+        loadedChunks.forEach(loadedChunk -> chunkConsumer.accept(loadedChunk, true));
 
         if (updateChunk != null)
             loadedChunks.forEach(updateChunk);
@@ -72,17 +75,21 @@ public final class NMSUtils {
     }
 
     public static void runActionOnUnloadedChunks(WorldServer worldServer, Collection<ChunkCoordIntPair> chunks,
-                                                 boolean saveChunks, Consumer<Chunk> chunkConsumer,
+                                                 boolean saveChunks, BiConsumer<Chunk, Boolean> chunkConsumer,
                                                  Runnable onFinish) {
         IChunkLoader chunkLoader = chunkLoadersMap.computeIfAbsent(worldServer.getDataManager().getUUID(),
                 uuid -> CHUNK_LOADER.get(worldServer.chunkProviderServer));
 
         chunks.forEach(chunkCoords -> {
+            if (chunkLoader instanceof ChunkRegionLoader &&
+                    !((ChunkRegionLoader) chunkLoader).chunkExists(worldServer, chunkCoords.x, chunkCoords.z))
+                return;
+
             try {
                 Chunk loadedChunk = chunkLoader.a(worldServer, chunkCoords.x, chunkCoords.z);
 
                 if (loadedChunk != null)
-                    chunkConsumer.accept(loadedChunk);
+                    chunkConsumer.accept(loadedChunk, false);
 
                 if (loadedChunk != null) {
                     if (saveChunks) {
@@ -113,6 +120,9 @@ public final class NMSUtils {
     }
 
     public static void setBlock(Chunk chunk, BlockPosition blockPosition, int combinedId, CompoundTag tileEntity) {
+        if (!isValidPosition(chunk.world, blockPosition))
+            return;
+
         IBlockData blockData = Block.getByCombinedId(combinedId);
 
         if (blockData.getBlock().getMaterial().isLiquid() && plugin.getSettings().isLiquidUpdate()) {
@@ -154,6 +164,12 @@ public final class NMSUtils {
                     worldTileEntity.a(tileEntityCompound);
             }
         }
+    }
+
+    private static boolean isValidPosition(World world, BlockPosition blockPosition) {
+        return blockPosition.getX() >= -30000000 && blockPosition.getZ() >= -30000000 &&
+                blockPosition.getX() < 30000000 && blockPosition.getZ() < 30000000 &&
+                blockPosition.getY() >= 0 && blockPosition.getY() < world.getHeight();
     }
 
 }

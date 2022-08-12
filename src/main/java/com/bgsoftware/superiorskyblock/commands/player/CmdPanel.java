@@ -1,20 +1,20 @@
 package com.bgsoftware.superiorskyblock.commands.player;
 
-import com.bgsoftware.superiorskyblock.lang.Message;
 import com.bgsoftware.superiorskyblock.SuperiorSkyblockPlugin;
 import com.bgsoftware.superiorskyblock.api.island.Island;
-import com.bgsoftware.superiorskyblock.api.objects.Pair;
 import com.bgsoftware.superiorskyblock.api.wrappers.SuperiorPlayer;
-import com.bgsoftware.superiorskyblock.commands.CommandArguments;
 import com.bgsoftware.superiorskyblock.commands.CommandTabCompletes;
 import com.bgsoftware.superiorskyblock.commands.ISuperiorCommand;
+import com.bgsoftware.superiorskyblock.commands.arguments.CommandArguments;
+import com.bgsoftware.superiorskyblock.commands.arguments.IslandArgument;
+import com.bgsoftware.superiorskyblock.core.messages.Message;
 import org.bukkit.command.CommandSender;
 
-import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
-public final class CmdPanel implements ISuperiorCommand {
+public class CmdPanel implements ISuperiorCommand {
 
     @Override
     public List<String> getAliases() {
@@ -53,14 +53,14 @@ public final class CmdPanel implements ISuperiorCommand {
 
     @Override
     public void execute(SuperiorSkyblockPlugin plugin, CommandSender sender, String[] args) {
-        Pair<Island, SuperiorPlayer> arguments = CommandArguments.getSenderIsland(plugin, sender);
+        IslandArgument arguments = CommandArguments.getSenderIsland(plugin, sender);
 
-        Island island = arguments.getKey();
+        Island island = arguments.getIsland();
 
         if (island == null)
             return;
 
-        SuperiorPlayer superiorPlayer = arguments.getValue();
+        SuperiorPlayer superiorPlayer = arguments.getSuperiorPlayer();
 
         if (args.length > 1) {
             if (args[1].equalsIgnoreCase("members")) {
@@ -70,6 +70,9 @@ public final class CmdPanel implements ISuperiorCommand {
                 plugin.getMenus().openVisitors(superiorPlayer, null, island);
                 return;
             } else if (args[1].equalsIgnoreCase("toggle")) {
+                if (!plugin.getEventsBus().callPlayerTogglePanelEvent(superiorPlayer))
+                    return;
+
                 if (superiorPlayer.hasToggledPanel()) {
                     superiorPlayer.setToggledPanel(false);
                     Message.PANEL_TOGGLE_OFF.send(superiorPlayer);
@@ -86,7 +89,7 @@ public final class CmdPanel implements ISuperiorCommand {
 
     @Override
     public List<String> tabComplete(SuperiorSkyblockPlugin plugin, CommandSender sender, String[] args) {
-        return args.length == 2 ? CommandTabCompletes.getCustomComplete(args[1], "members", "visitors", "toggle") : new ArrayList<>();
+        return args.length == 2 ? CommandTabCompletes.getCustomComplete(args[1], "members", "visitors", "toggle") : Collections.emptyList();
     }
 
 }

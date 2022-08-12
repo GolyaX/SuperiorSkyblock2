@@ -1,16 +1,18 @@
 package com.bgsoftware.superiorskyblock.api.island;
 
-import com.bgsoftware.superiorskyblock.api.data.DatabaseBridge;
-import com.bgsoftware.superiorskyblock.api.data.IslandDataHandler;
+import com.bgsoftware.superiorskyblock.api.data.IDatabaseBridgeHolder;
 import com.bgsoftware.superiorskyblock.api.enums.Rating;
 import com.bgsoftware.superiorskyblock.api.island.algorithms.IslandBlocksTrackerAlgorithm;
 import com.bgsoftware.superiorskyblock.api.island.algorithms.IslandCalculationAlgorithm;
+import com.bgsoftware.superiorskyblock.api.island.algorithms.IslandEntitiesTrackerAlgorithm;
 import com.bgsoftware.superiorskyblock.api.island.bank.IslandBank;
 import com.bgsoftware.superiorskyblock.api.island.warps.IslandWarp;
 import com.bgsoftware.superiorskyblock.api.island.warps.WarpCategory;
 import com.bgsoftware.superiorskyblock.api.key.Key;
 import com.bgsoftware.superiorskyblock.api.missions.IMissionsHolder;
 import com.bgsoftware.superiorskyblock.api.objects.Pair;
+import com.bgsoftware.superiorskyblock.api.persistence.IPersistentDataHolder;
+import com.bgsoftware.superiorskyblock.api.service.message.IMessageComponent;
 import com.bgsoftware.superiorskyblock.api.upgrades.Upgrade;
 import com.bgsoftware.superiorskyblock.api.upgrades.UpgradeLevel;
 import com.bgsoftware.superiorskyblock.api.wrappers.SuperiorPlayer;
@@ -32,7 +34,7 @@ import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 
-public interface Island extends Comparable<Island>, IMissionsHolder {
+public interface Island extends Comparable<Island>, IMissionsHolder, IPersistentDataHolder, IDatabaseBridgeHolder {
 
     /*
      *  General methods
@@ -321,9 +323,21 @@ public interface Island extends Comparable<Island>, IMissionsHolder {
 
     /**
      * Get the visitors' teleport location of the island.
+     *
+     * @deprecated See {@link #getVisitorsLocation(World.Environment)}
      */
     @Nullable
+    @Deprecated
     Location getVisitorsLocation();
+
+    /**
+     * Get the visitors' teleport location of the island.
+     *
+     * @param environment The environment to get the visitors-location from.
+     *                    Currently unused, it has no effect.
+     */
+    @Nullable
+    Location getVisitorsLocation(World.Environment environment);
 
     /**
      * Set the visitors' teleport location of the island.
@@ -784,6 +798,23 @@ public interface Island extends Comparable<Island>, IMissionsHolder {
      * @param ignoredMembers An array of ignored members.
      */
     void sendMessage(String message, UUID... ignoredMembers);
+
+    /**
+     * Send a message to all the members of the island.
+     *
+     * @param messageComponent The message to send
+     * @param args             Arguments for the component.
+     */
+    void sendMessage(IMessageComponent messageComponent, Object... args);
+
+    /**
+     * Send a message to all the members of the island.
+     *
+     * @param messageComponent The message to send
+     * @param ignoredMembers   An array of ignored members.
+     * @param args             Arguments for the component.
+     */
+    void sendMessage(IMessageComponent messageComponent, List<UUID> ignoredMembers, Object... args);
 
     /**
      * Send a plain message to all the members of the island.
@@ -1323,6 +1354,11 @@ public interface Island extends Comparable<Island>, IMissionsHolder {
     CompletableFuture<Boolean> hasReachedEntityLimit(Key key, int amount);
 
     /**
+     * Get the entities tracker used by the island.
+     */
+    IslandEntitiesTrackerAlgorithm getEntitiesTracker();
+
+    /**
      * Get the team limit of the island.
      */
     int getTeamLimit();
@@ -1364,6 +1400,13 @@ public interface Island extends Comparable<Island>, IMissionsHolder {
      *              If the level is 0 or below, then the effect will be removed.
      */
     void setPotionEffect(PotionEffectType type, int level);
+
+    /**
+     * Remove a potion effect from the island.
+     *
+     * @param type The potion effect to remove.
+     */
+    void removePotionEffect(PotionEffectType type);
 
     /**
      * Get the level of an island effect.
@@ -1411,6 +1454,13 @@ public interface Island extends Comparable<Island>, IMissionsHolder {
      * @param limit      The limit to set.
      */
     void setRoleLimit(PlayerRole playerRole, int limit);
+
+    /**
+     * Remove the limit of the amount of players that can have the role in the island.
+     *
+     * @param playerRole The role to remove the limit.
+     */
+    void removeRoleLimit(PlayerRole playerRole);
 
     /**
      * Get the limit of players that can have the same role at a time.
@@ -1567,6 +1617,13 @@ public interface Island extends Comparable<Island>, IMissionsHolder {
     void setRating(SuperiorPlayer superiorPlayer, Rating rating);
 
     /**
+     * Remove a rating of a player.
+     *
+     * @param superiorPlayer The player to remove the rating of.
+     */
+    void removeRating(SuperiorPlayer superiorPlayer);
+
+    /**
      * Get the total rating of the island.
      */
     double getTotalRating();
@@ -1624,6 +1681,7 @@ public interface Island extends Comparable<Island>, IMissionsHolder {
     /**
      * Set a percentage for a specific key in a specific world.
      * Percentage can be between 0 and 100 (0 will remove the key from the list).
+     * Calling this method will not make events get fired.
      * <p>
      * This function sets the amount of the key using the following formula:
      * amount = (percentage * total_amount) / (1 - percentage)
@@ -1632,8 +1690,36 @@ public interface Island extends Comparable<Island>, IMissionsHolder {
      * the material's amount will be set to 1.
      * <p>
      * The amount is rounded to ensure a smaller loss, and currently it's 1%~ loss.
+     *
+     * @param key         The block to change the generator rate of.
+     * @param percentage  The percentage to set the new rate.
+     * @param environment The world to change the rates in.
      */
     void setGeneratorPercentage(Key key, int percentage, World.Environment environment);
+
+    /**
+     * Set a percentage for a specific key in a specific world.
+     * Percentage can be between 0 and 100 (0 will remove the key from the list).
+     * <p>
+     * This function sets the amount of the key using the following formula:
+     * amount = (percentage * total_amount) / (1 - percentage)
+     * <p>
+     * If the percentage is 100, the rest of the amounts will be cleared and
+     * the material's amount will be set to 1.
+     * <p>
+     * The amount is rounded to ensure a smaller loss, and currently it's 1%~ loss.
+     *
+     * @param key         The block to change the generator rate of.
+     * @param percentage  The percentage to set the new rate.
+     * @param environment The world to change the rates in.
+     * @param caller      The player that changes the percentages (used for the event).
+     *                    If null, it means the console did the operation.
+     * @param callEvent   Whether to call the {@link com.bgsoftware.superiorskyblock.api.events.IslandChangeGeneratorRateEvent}
+     * @return Whether the operation succeed.
+     * The operation may fail if callEvent is true and the event was cancelled.
+     */
+    boolean setGeneratorPercentage(Key key, int percentage, World.Environment environment,
+                                   @Nullable SuperiorPlayer caller, boolean callEvent);
 
     /**
      * Get the percentage for a specific key in a specific world.
@@ -1653,6 +1739,11 @@ public interface Island extends Comparable<Island>, IMissionsHolder {
      * Set an amount for a specific key in a specific world.
      */
     void setGeneratorAmount(Key key, int amount, World.Environment environment);
+
+    /**
+     * Remove a rate for a specific key in a specific world.
+     */
+    void removeGeneratorAmount(Key key, World.Environment environment);
 
     /**
      * Get the amount of a specific key in a specific world.
@@ -1678,6 +1769,40 @@ public interface Island extends Comparable<Island>, IMissionsHolder {
      * Clear all the custom generator amounts for this island.
      */
     void clearGeneratorAmounts(World.Environment environment);
+
+    /**
+     * Generate a block at a specified location.
+     * The method calculates a block to generate from {@link #getGeneratorAmounts(World.Environment)}.
+     * It doesn't look for any conditions for generating it - lava, water, etc are not required.
+     * The method will fail if there are no valid generator rates for the environment.
+     *
+     * @param location            The location to generate block at.
+     * @param optimizeCobblestone When set to true and cobblestone needs to be generated, the plugin will
+     *                            not play effects, count the block towards the block counts or set the block.
+     *                            This is useful when calling the method from BlockFromToEvent, and instead of letting
+     *                            the player do the logic of vanilla, the plugin lets the game do it.
+     * @return The block type that was generated, null if failed.
+     */
+    @Nullable
+    Key generateBlock(Location location, boolean optimizeCobblestone);
+
+
+    /**
+     * Generate a block at a specified location.
+     * The method calculates a block to generate from {@link #getGeneratorAmounts(World.Environment)}.
+     * It doesn't look for any conditions for generating it - lava, water, etc are not required.
+     * The method will fail if there are no valid generator rates for the environment.
+     *
+     * @param location            The location to generate block at.
+     * @param environment         The world to get generator rates from.
+     * @param optimizeCobblestone When set to true and cobblestone needs to be generated, the plugin will
+     *                            not play effects, count the block towards the block counts or set the block.
+     *                            This is useful when calling the method from BlockFromToEvent, and instead of letting
+     *                            the player do the logic of vanilla, the plugin lets the game do it.
+     * @return The block type that was generated, null if failed.
+     */
+    @Nullable
+    Key generateBlock(Location location, World.Environment environment, boolean optimizeCobblestone);
 
     /*
      *  Schematic methods
@@ -1742,22 +1867,5 @@ public interface Island extends Comparable<Island>, IMissionsHolder {
      * @param rows  The amount of rows for that page.
      */
     void setChestRows(int index, int rows);
-
-    /*
-     *  Data related methods
-     */
-
-    /**
-     * Get the data handler of the object.
-     *
-     * @deprecated See getDatabaseBridge
-     */
-    @Deprecated
-    IslandDataHandler getDataHandler();
-
-    /**
-     * Get the current database bridge of the island.
-     */
-    DatabaseBridge getDatabaseBridge();
 
 }

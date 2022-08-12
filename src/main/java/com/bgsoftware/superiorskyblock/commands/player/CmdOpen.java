@@ -1,17 +1,17 @@
 package com.bgsoftware.superiorskyblock.commands.player;
 
-import com.bgsoftware.superiorskyblock.lang.Message;
 import com.bgsoftware.superiorskyblock.SuperiorSkyblockPlugin;
 import com.bgsoftware.superiorskyblock.api.island.Island;
 import com.bgsoftware.superiorskyblock.api.island.IslandPrivilege;
 import com.bgsoftware.superiorskyblock.api.wrappers.SuperiorPlayer;
+import com.bgsoftware.superiorskyblock.core.messages.Message;
 import com.bgsoftware.superiorskyblock.commands.IPermissibleCommand;
-import com.bgsoftware.superiorskyblock.island.permissions.IslandPrivileges;
+import com.bgsoftware.superiorskyblock.island.privilege.IslandPrivileges;
 
 import java.util.Arrays;
 import java.util.List;
 
-public final class CmdOpen implements IPermissibleCommand {
+public class CmdOpen implements IPermissibleCommand {
 
     @Override
     public List<String> getAliases() {
@@ -60,8 +60,10 @@ public final class CmdOpen implements IPermissibleCommand {
 
     @Override
     public void execute(SuperiorSkyblockPlugin plugin, SuperiorPlayer superiorPlayer, Island island, String[] args) {
-        island.setLocked(false);
-        Message.ISLAND_OPENED.send(superiorPlayer);
+        if (plugin.getEventsBus().callIslandOpenEvent(island, superiorPlayer)) {
+            island.setLocked(false);
+            Message.ISLAND_OPENED.send(superiorPlayer);
+        }
     }
 
 }

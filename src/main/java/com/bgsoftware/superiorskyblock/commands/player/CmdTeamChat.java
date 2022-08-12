@@ -1,22 +1,22 @@
 package com.bgsoftware.superiorskyblock.commands.player;
 
-import com.bgsoftware.superiorskyblock.lang.Message;
 import com.bgsoftware.superiorskyblock.SuperiorSkyblockPlugin;
 import com.bgsoftware.superiorskyblock.api.island.Island;
-import com.bgsoftware.superiorskyblock.api.objects.Pair;
 import com.bgsoftware.superiorskyblock.api.wrappers.SuperiorPlayer;
-import com.bgsoftware.superiorskyblock.commands.CommandArguments;
 import com.bgsoftware.superiorskyblock.commands.ISuperiorCommand;
-import com.bgsoftware.superiorskyblock.utils.islands.IslandUtils;
+import com.bgsoftware.superiorskyblock.commands.arguments.CommandArguments;
+import com.bgsoftware.superiorskyblock.commands.arguments.IslandArgument;
+import com.bgsoftware.superiorskyblock.core.messages.Message;
+import com.bgsoftware.superiorskyblock.island.IslandUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 
-import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
-public final class CmdTeamChat implements ISuperiorCommand {
+public class CmdTeamChat implements ISuperiorCommand {
 
     @Override
     public List<String> getAliases() {
@@ -55,25 +55,29 @@ public final class CmdTeamChat implements ISuperiorCommand {
 
     @Override
     public void execute(SuperiorSkyblockPlugin plugin, CommandSender sender, String[] args) {
-        Pair<Island, SuperiorPlayer> arguments = CommandArguments.getSenderIsland(plugin, sender);
+        IslandArgument arguments = CommandArguments.getSenderIsland(plugin, sender);
 
-        Island island = arguments.getKey();
+        Island island = arguments.getIsland();
 
         if (island == null)
             return;
 
-        SuperiorPlayer superiorPlayer = arguments.getValue();
+        SuperiorPlayer superiorPlayer = arguments.getSuperiorPlayer();
 
         if (args.length == 1) {
+            if (!plugin.getEventsBus().callPlayerToggleTeamChatEvent(superiorPlayer))
+                return;
+
             if (superiorPlayer.hasTeamChatEnabled()) {
                 Message.TOGGLED_TEAM_CHAT_OFF.send(superiorPlayer);
             } else {
                 Message.TOGGLED_TEAM_CHAT_ON.send(superiorPlayer);
             }
+
             superiorPlayer.toggleTeamChat();
         } else {
-            String message = CommandArguments.buildLongString(args, 1, true);
-            IslandUtils.sendMessage(island, Message.TEAM_CHAT_FORMAT, new ArrayList<>(), superiorPlayer.getPlayerRole(),
+            String message = CommandArguments.buildLongString(args, 1, superiorPlayer.hasPermissionWithoutOP("superior.chat.color"));
+            IslandUtils.sendMessage(island, Message.TEAM_CHAT_FORMAT, Collections.emptyList(), superiorPlayer.getPlayerRole(),
                     superiorPlayer.getName(), message);
             Message.SPY_TEAM_CHAT_FORMAT.send(Bukkit.getConsoleSender(), superiorPlayer.getPlayerRole(), superiorPlayer.getName(), message);
             for (Player _onlinePlayer : Bukkit.getOnlinePlayers()) {
@@ -86,7 +90,7 @@ public final class CmdTeamChat implements ISuperiorCommand {
 
     @Override
     public List<String> tabComplete(SuperiorSkyblockPlugin plugin, CommandSender sender, String[] args) {
-        return new ArrayList<>();
+        return Collections.emptyList();
     }
 
 }

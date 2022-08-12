@@ -1,17 +1,16 @@
 package com.bgsoftware.superiorskyblock.commands.player;
 
-import com.bgsoftware.superiorskyblock.lang.Message;
 import com.bgsoftware.superiorskyblock.SuperiorSkyblockPlugin;
 import com.bgsoftware.superiorskyblock.api.wrappers.SuperiorPlayer;
 import com.bgsoftware.superiorskyblock.commands.CommandTabCompletes;
 import com.bgsoftware.superiorskyblock.commands.ISuperiorCommand;
+import com.bgsoftware.superiorskyblock.core.messages.Message;
 import org.bukkit.command.CommandSender;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-public final class CmdToggle implements ISuperiorCommand {
+public class CmdToggle implements ISuperiorCommand {
 
     @Override
     public List<String> getAliases() {
@@ -58,6 +57,9 @@ public final class CmdToggle implements ISuperiorCommand {
                 return;
             }
 
+            if (!plugin.getEventsBus().callPlayerToggleBorderEvent(superiorPlayer))
+                return;
+
             if (superiorPlayer.hasWorldBorderEnabled()) {
                 Message.TOGGLED_WORLD_BORDER_OFF.send(superiorPlayer);
             } else {
@@ -71,6 +73,9 @@ public final class CmdToggle implements ISuperiorCommand {
                 Message.NO_COMMAND_PERMISSION.send(sender);
                 return;
             }
+
+            if (!plugin.getEventsBus().callPlayerToggleBlocksStackerEvent(superiorPlayer))
+                return;
 
             if (superiorPlayer.hasBlocksStackerEnabled()) {
                 Message.TOGGLED_STACKED_BLOCKS_OFF.send(superiorPlayer);
@@ -88,7 +93,7 @@ public final class CmdToggle implements ISuperiorCommand {
     @Override
     public List<String> tabComplete(SuperiorSkyblockPlugin plugin, CommandSender sender, String[] args) {
         return args.length == 2 ? CommandTabCompletes.getCustomComplete(args[1], var ->
-                sender.hasPermission("superior.island.toggle." + var), "border", "blocks") : new ArrayList<>();
+                sender.hasPermission("superior.island.toggle." + var), "border", "blocks") : Collections.emptyList();
     }
 
 }

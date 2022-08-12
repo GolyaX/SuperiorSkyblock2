@@ -32,14 +32,16 @@ POSSIBILITY OF SUCH DAMAGE.
  */
 package com.bgsoftware.superiorskyblock.tag;
 
-import com.bgsoftware.superiorskyblock.utils.debug.PluginDebugger;
+import com.bgsoftware.superiorskyblock.core.debug.PluginDebugger;
 import com.google.common.base.Preconditions;
+import org.jetbrains.annotations.NotNull;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
 
 /**
@@ -48,9 +50,9 @@ import java.util.List;
  * @author Graham Edgecombe
  */
 @SuppressWarnings("rawtypes")
-public final class ListTag extends Tag<List<Tag<?>>> {
+public class ListTag extends Tag<List<Tag<?>>> implements Iterable<Tag<?>> {
 
-    static final Class<?> CLASS = getNNTClass("NBTTagList");
+    /*package*/ static final Class<?> CLASS = getNNTClass("NBTTagList");
 
     /**
      * The type.
@@ -66,6 +68,10 @@ public final class ListTag extends Tag<List<Tag<?>>> {
     public ListTag(Class<? extends Tag> type, List<Tag<?>> value) {
         super(new ArrayList<>(value), null);
         this.type = type;
+    }
+
+    public ListTag copy() {
+        return new ListTag(type, value);
     }
 
     public static ListTag fromNBT(Object tag) {
@@ -93,7 +99,7 @@ public final class ListTag extends Tag<List<Tag<?>>> {
         List<Tag<?>> tagList = new ArrayList<>();
 
         for (int i = 0; i < length; i++) {
-            Tag<?> tag = Tag.fromStream(is, depth + 1, childType);
+            Tag<?> tag = fromStream(is, depth + 1, childType);
             if (tag instanceof EndTag) {
                 throw new IOException("TAG_End not permitted in a list.");
             }
@@ -108,11 +114,17 @@ public final class ListTag extends Tag<List<Tag<?>>> {
         return Collections.unmodifiableList(value);
     }
 
+    @NotNull
+    @Override
+    public Iterator<Tag<?>> iterator() {
+        return value.iterator();
+    }
+
     @Override
     public String toString() {
         StringBuilder bldr = new StringBuilder();
         bldr.append("TAG_List: ").append(value.size()).append(" entries of type ").append(NBTUtils.getTypeName(type)).append("\r\n{\r\n");
-        for (Tag t : value) {
+        for (Tag<?> t : value) {
             bldr.append("   ").append(t.toString().replaceAll("\r\n", "\r\n   ")).append("\r\n");
         }
         bldr.append("}");

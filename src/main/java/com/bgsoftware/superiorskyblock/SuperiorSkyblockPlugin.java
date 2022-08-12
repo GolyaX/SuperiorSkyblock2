@@ -1,43 +1,63 @@
 package com.bgsoftware.superiorskyblock;
 
-import com.bgsoftware.common.reflection.ReflectField;
 import com.bgsoftware.common.updater.Updater;
 import com.bgsoftware.superiorskyblock.api.SuperiorSkyblock;
 import com.bgsoftware.superiorskyblock.api.SuperiorSkyblockAPI;
 import com.bgsoftware.superiorskyblock.api.handlers.MenusManager;
 import com.bgsoftware.superiorskyblock.api.island.Island;
+import com.bgsoftware.superiorskyblock.api.island.SortingType;
 import com.bgsoftware.superiorskyblock.api.modules.ModuleLoadTime;
 import com.bgsoftware.superiorskyblock.api.scripts.IScriptEngine;
 import com.bgsoftware.superiorskyblock.api.world.event.WorldEventsManager;
 import com.bgsoftware.superiorskyblock.api.wrappers.SuperiorPlayer;
-import com.bgsoftware.superiorskyblock.commands.CommandsHandler;
+import com.bgsoftware.superiorskyblock.commands.CommandsManagerImpl;
 import com.bgsoftware.superiorskyblock.commands.admin.AdminCommandsMap;
 import com.bgsoftware.superiorskyblock.commands.player.PlayerCommandsMap;
-import com.bgsoftware.superiorskyblock.config.SettingsHandler;
-import com.bgsoftware.superiorskyblock.database.DataHandler;
-import com.bgsoftware.superiorskyblock.engine.NashornEngine;
-import com.bgsoftware.superiorskyblock.engine.NashornEngineDownloader;
-import com.bgsoftware.superiorskyblock.factory.FactoriesHandler;
-import com.bgsoftware.superiorskyblock.handler.HandlerLoadException;
-import com.bgsoftware.superiorskyblock.hooks.ProvidersHandler;
+import com.bgsoftware.superiorskyblock.config.SettingsManagerImpl;
+import com.bgsoftware.superiorskyblock.core.Singleton;
+import com.bgsoftware.superiorskyblock.core.database.DataManager;
+import com.bgsoftware.superiorskyblock.core.debug.PluginDebugger;
+import com.bgsoftware.superiorskyblock.core.engine.NashornEngine;
+import com.bgsoftware.superiorskyblock.core.engine.NashornEngineDownloader;
+import com.bgsoftware.superiorskyblock.core.errors.ManagerLoadException;
+import com.bgsoftware.superiorskyblock.core.events.EventsBus;
+import com.bgsoftware.superiorskyblock.core.factory.FactoriesManagerImpl;
+import com.bgsoftware.superiorskyblock.core.formatting.Formatters;
+import com.bgsoftware.superiorskyblock.core.io.JarFiles;
+import com.bgsoftware.superiorskyblock.core.itemstack.GlowEnchantment;
+import com.bgsoftware.superiorskyblock.core.itemstack.ItemSkulls;
+import com.bgsoftware.superiorskyblock.core.key.KeysManagerImpl;
+import com.bgsoftware.superiorskyblock.core.menu.MenusManagerImpl;
+import com.bgsoftware.superiorskyblock.core.messages.Message;
+import com.bgsoftware.superiorskyblock.core.stackedblocks.StackedBlocksManagerImpl;
+import com.bgsoftware.superiorskyblock.core.stackedblocks.container.DefaultStackedBlocksContainer;
+import com.bgsoftware.superiorskyblock.core.task.CalcTask;
+import com.bgsoftware.superiorskyblock.core.task.ShutdownTask;
+import com.bgsoftware.superiorskyblock.core.threads.BukkitExecutor;
+import com.bgsoftware.superiorskyblock.core.values.BlockValuesManagerImpl;
+import com.bgsoftware.superiorskyblock.core.values.container.BlockLevelsContainer;
+import com.bgsoftware.superiorskyblock.core.values.container.BlockWorthValuesContainer;
+import com.bgsoftware.superiorskyblock.core.values.container.GeneralBlockValuesContainer;
+import com.bgsoftware.superiorskyblock.external.ProvidersManagerImpl;
+import com.bgsoftware.superiorskyblock.island.GridManagerImpl;
 import com.bgsoftware.superiorskyblock.island.container.DefaultIslandsContainer;
-import com.bgsoftware.superiorskyblock.island.flags.IslandFlags;
-import com.bgsoftware.superiorskyblock.island.permissions.IslandPrivileges;
-import com.bgsoftware.superiorskyblock.key.KeysHandler;
-import com.bgsoftware.superiorskyblock.lang.Message;
-import com.bgsoftware.superiorskyblock.listeners.BlocksListener;
-import com.bgsoftware.superiorskyblock.listeners.ChunksListener;
-import com.bgsoftware.superiorskyblock.listeners.CustomEventsListener;
-import com.bgsoftware.superiorskyblock.listeners.DragonListener;
-import com.bgsoftware.superiorskyblock.listeners.MenusListener;
-import com.bgsoftware.superiorskyblock.listeners.PlayersListener;
-import com.bgsoftware.superiorskyblock.listeners.ProtectionListener;
-import com.bgsoftware.superiorskyblock.listeners.SettingsListener;
-import com.bgsoftware.superiorskyblock.menu.MenusHandler;
-import com.bgsoftware.superiorskyblock.metrics.Metrics;
-import com.bgsoftware.superiorskyblock.mission.MissionsHandler;
+import com.bgsoftware.superiorskyblock.island.flag.IslandFlags;
+import com.bgsoftware.superiorskyblock.island.preview.DefaultIslandPreviews;
+import com.bgsoftware.superiorskyblock.island.privilege.IslandPrivileges;
+import com.bgsoftware.superiorskyblock.island.purge.DefaultIslandsPurger;
+import com.bgsoftware.superiorskyblock.island.role.RolesManagerImpl;
+import com.bgsoftware.superiorskyblock.island.role.container.DefaultRolesContainer;
+import com.bgsoftware.superiorskyblock.island.top.SortingComparators;
+import com.bgsoftware.superiorskyblock.island.top.SortingTypes;
+import com.bgsoftware.superiorskyblock.island.upgrade.UpgradesManagerImpl;
+import com.bgsoftware.superiorskyblock.island.upgrade.container.DefaultUpgradesContainer;
+import com.bgsoftware.superiorskyblock.island.upgrade.loaders.PlaceholdersUpgradeCostLoader;
+import com.bgsoftware.superiorskyblock.island.upgrade.loaders.VaultUpgradeCostLoader;
+import com.bgsoftware.superiorskyblock.listener.BukkitListeners;
+import com.bgsoftware.superiorskyblock.listener.ChunksListener;
+import com.bgsoftware.superiorskyblock.mission.MissionsManagerImpl;
 import com.bgsoftware.superiorskyblock.mission.container.DefaultMissionsContainer;
-import com.bgsoftware.superiorskyblock.module.ModulesHandler;
+import com.bgsoftware.superiorskyblock.module.ModulesManagerImpl;
 import com.bgsoftware.superiorskyblock.module.container.DefaultModulesContainer;
 import com.bgsoftware.superiorskyblock.nms.NMSAlgorithms;
 import com.bgsoftware.superiorskyblock.nms.NMSChunks;
@@ -48,37 +68,18 @@ import com.bgsoftware.superiorskyblock.nms.NMSHolograms;
 import com.bgsoftware.superiorskyblock.nms.NMSPlayers;
 import com.bgsoftware.superiorskyblock.nms.NMSTags;
 import com.bgsoftware.superiorskyblock.nms.NMSWorld;
-import com.bgsoftware.superiorskyblock.player.PlayersHandler;
+import com.bgsoftware.superiorskyblock.player.PlayersManagerImpl;
 import com.bgsoftware.superiorskyblock.player.container.DefaultPlayersContainer;
-import com.bgsoftware.superiorskyblock.role.RolesHandler;
-import com.bgsoftware.superiorskyblock.role.container.DefaultRolesContainer;
-import com.bgsoftware.superiorskyblock.schematic.SchematicsHandler;
-import com.bgsoftware.superiorskyblock.schematic.container.DefaultSchematicsContainer;
-import com.bgsoftware.superiorskyblock.tasks.CalcTask;
-import com.bgsoftware.superiorskyblock.tasks.ShutdownTask;
-import com.bgsoftware.superiorskyblock.threads.Executor;
-import com.bgsoftware.superiorskyblock.upgrade.UpgradesHandler;
-import com.bgsoftware.superiorskyblock.upgrade.container.DefaultUpgradesContainer;
-import com.bgsoftware.superiorskyblock.upgrade.loaders.PlaceholdersUpgradeCostLoader;
-import com.bgsoftware.superiorskyblock.upgrade.loaders.VaultUpgradeCostLoader;
-import com.bgsoftware.superiorskyblock.utils.FileUtils;
-import com.bgsoftware.superiorskyblock.utils.StringUtils;
-import com.bgsoftware.superiorskyblock.utils.debug.PluginDebugger;
-import com.bgsoftware.superiorskyblock.utils.events.EventsCaller;
-import com.bgsoftware.superiorskyblock.utils.islands.SortingTypes;
-import com.bgsoftware.superiorskyblock.utils.items.EnchantsUtils;
-import com.bgsoftware.superiorskyblock.utils.items.HeadUtils;
-import com.bgsoftware.superiorskyblock.values.BlockValuesHandler;
-import com.bgsoftware.superiorskyblock.values.container.BlockLevelsContainer;
-import com.bgsoftware.superiorskyblock.values.container.BlockWorthValuesContainer;
-import com.bgsoftware.superiorskyblock.values.container.GeneralBlockValuesContainer;
-import com.bgsoftware.superiorskyblock.world.GridHandler;
-import com.bgsoftware.superiorskyblock.world.blocks.stacked.StackedBlocksHandler;
-import com.bgsoftware.superiorskyblock.world.blocks.stacked.container.DefaultStackedBlocksContainer;
-import com.bgsoftware.superiorskyblock.world.chunks.ChunksProvider;
-import com.bgsoftware.superiorskyblock.world.event.WorldEventsManagerImpl;
-import com.bgsoftware.superiorskyblock.world.preview.DefaultIslandPreviews;
-import com.bgsoftware.superiorskyblock.world.purge.DefaultIslandsPurger;
+import com.bgsoftware.superiorskyblock.service.ServicesHandler;
+import com.bgsoftware.superiorskyblock.service.bossbar.BossBarsServiceImpl;
+import com.bgsoftware.superiorskyblock.service.dragon.DragonBattleServiceImpl;
+import com.bgsoftware.superiorskyblock.service.hologram.HologramsServiceImpl;
+import com.bgsoftware.superiorskyblock.service.message.MessagesServiceImpl;
+import com.bgsoftware.superiorskyblock.service.placeholders.PlaceholdersServiceImpl;
+import com.bgsoftware.superiorskyblock.world.chunk.ChunksProvider;
+import com.bgsoftware.superiorskyblock.world.schematic.SchematicsManagerImpl;
+import com.bgsoftware.superiorskyblock.world.schematic.container.DefaultSchematicsContainer;
+import org.bstats.bukkit.Metrics;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.World;
@@ -91,49 +92,46 @@ import javax.annotation.Nullable;
 import java.io.File;
 import java.lang.reflect.Constructor;
 import java.util.Optional;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
-public final class SuperiorSkyblockPlugin extends JavaPlugin implements SuperiorSkyblock {
-
-    private static final ReflectField<SuperiorSkyblock> PLUGIN = new ReflectField<>(SuperiorSkyblockAPI.class, SuperiorSkyblock.class, "plugin");
-    private static final Pattern LISTENER_REGISTER_FAILURE =
-            Pattern.compile("Plugin SuperiorSkyblock2 v(.*) has failed to register events for (.*) because (.*) does not exist\\.");
+public class SuperiorSkyblockPlugin extends JavaPlugin implements SuperiorSkyblock {
 
     private static SuperiorSkyblockPlugin plugin;
     private final Updater updater = new Updater(this, "superiorskyblock2");
 
-    private final DataHandler dataHandler = new DataHandler(this);
-    private final FactoriesHandler factoriesHandler = new FactoriesHandler();
-    private final GridHandler gridHandler = new GridHandler(this,
-            new DefaultIslandsPurger(), new DefaultIslandPreviews(), new DefaultIslandsContainer(this));
-    private final StackedBlocksHandler stackedBlocksHandler = new StackedBlocksHandler(this,
+    private final DataManager dataHandler = new DataManager(this);
+    private final FactoriesManagerImpl factoriesHandler = new FactoriesManagerImpl();
+    private final GridManagerImpl gridHandler = new GridManagerImpl(this,
+            new DefaultIslandsPurger(), new DefaultIslandPreviews());
+    private final StackedBlocksManagerImpl stackedBlocksHandler = new StackedBlocksManagerImpl(this,
             new DefaultStackedBlocksContainer());
-    private final BlockValuesHandler blockValuesHandler = new BlockValuesHandler(this,
+    private final BlockValuesManagerImpl blockValuesHandler = new BlockValuesManagerImpl(this,
             new BlockWorthValuesContainer(), new BlockLevelsContainer(),
             new GeneralBlockValuesContainer(), new GeneralBlockValuesContainer());
-    private final SchematicsHandler schematicsHandler = new SchematicsHandler(this,
+    private final SchematicsManagerImpl schematicsHandler = new SchematicsManagerImpl(this,
             new DefaultSchematicsContainer());
-    private final PlayersHandler playersHandler = new PlayersHandler(this,
-            new DefaultPlayersContainer());
-    private final RolesHandler rolesHandler = new RolesHandler(this,
+    private final PlayersManagerImpl playersHandler = new PlayersManagerImpl(this);
+    private final RolesManagerImpl rolesHandler = new RolesManagerImpl(this,
             new DefaultRolesContainer());
-    private final MissionsHandler missionsHandler = new MissionsHandler(this,
+    private final MissionsManagerImpl missionsHandler = new MissionsManagerImpl(this,
             new DefaultMissionsContainer());
-    private final MenusHandler menusHandler = new MenusHandler(this);
-    private final KeysHandler keysHandler = new KeysHandler(this);
-    private final ProvidersHandler providersHandler = new ProvidersHandler(this);
-    private final UpgradesHandler upgradesHandler = new UpgradesHandler(this,
+    private final MenusManagerImpl menusHandler = new MenusManagerImpl(this);
+    private final KeysManagerImpl keysHandler = new KeysManagerImpl(this);
+    private final ProvidersManagerImpl providersHandler = new ProvidersManagerImpl(this);
+    private final UpgradesManagerImpl upgradesHandler = new UpgradesManagerImpl(this,
             new DefaultUpgradesContainer());
-    private final CommandsHandler commandsHandler = new CommandsHandler(this,
+    private final CommandsManagerImpl commandsHandler = new CommandsManagerImpl(this,
             new PlayerCommandsMap(this), new AdminCommandsMap(this));
-    private final ModulesHandler modulesHandler = new ModulesHandler(this,
+    private final ModulesManagerImpl modulesHandler = new ModulesManagerImpl(this,
             new DefaultModulesContainer());
+    private final ServicesHandler servicesHandler = new ServicesHandler(this);
     // The only handler that is initialized is this one, therefore it's not final.
     // This is to prevent it's fields to be non-finals.
-    private SettingsHandler settingsHandler = null;
+    private SettingsManagerImpl settingsHandler = null;
     private IScriptEngine scriptEngine = NashornEngine.getInstance();
-    private WorldEventsManager worldEventsManager = new WorldEventsManagerImpl(this);
+
+    private final EventsBus eventsBus = new EventsBus(this);
+
+    private final BukkitListeners bukkitListeners = new BukkitListeners(this);
 
     private NMSAlgorithms nmsAlgorithms;
     private NMSChunks nmsChunks;
@@ -147,11 +145,10 @@ public final class SuperiorSkyblockPlugin extends JavaPlugin implements Superior
     private ChunkGenerator worldGenerator = null;
 
     private boolean shouldEnable = true;
-    private String listenerRegisterFailure = "";
 
     public static void log(String message) {
         //plugin.pluginDebugger.debug(ChatColor.stripColor(message));
-        message = StringUtils.translateColors(message);
+        message = Formatters.COLOR_FORMATTER.format(message);
         if (message.contains(ChatColor.COLOR_CHAR + ""))
             Bukkit.getConsoleSender().sendMessage(ChatColor.getLastColors(message.substring(0, 2)) + "[" + plugin.getDescription().getName() + "] " + message);
         else
@@ -165,85 +162,69 @@ public final class SuperiorSkyblockPlugin extends JavaPlugin implements Superior
     @Override
     public void onLoad() {
         plugin = this;
-        new Metrics(this);
 
-        initCustomFilter();
+        new Metrics(this, 4119);
 
-        PLUGIN.set(null, this);
+        bukkitListeners.registerListenerFailureFilter();
+
+        try {
+            SuperiorSkyblockAPI.setPluginInstance(this);
+        } catch (UnsupportedOperationException error) {
+            log("&cThe API instance was already initialized. " +
+                    "This can be caused by a reload or another plugin initializing it.");
+            shouldEnable = false;
+        }
 
         if (!loadNMSAdapter()) {
             shouldEnable = false;
         }
 
         Runtime.getRuntime().addShutdownHook(new ShutdownTask(this));
-    }
 
-    @Override
-    public void onDisable() {
-        if (!shouldEnable)
-            return;
-
-        ChunksProvider.stop();
-        Executor.syncDatabaseCalls();
-        unloadIslandWorlds();
+        IslandPrivileges.registerPrivileges();
+        SortingTypes.registerSortingTypes();
+        IslandFlags.registerFlags();
 
         try {
-            dataHandler.saveDatabase(false);
-
-            gridHandler.disablePlugin();
-
-            for (Island island : gridHandler.getIslandsToPurge())
-                island.disbandIsland();
-
-            playersHandler.savePlayers();
-            gridHandler.saveIslands();
-            stackedBlocksHandler.saveStackedBlocks();
-
-            modulesHandler.getModules().forEach(modulesHandler::unregisterModule);
-
-            Bukkit.getOnlinePlayers().forEach(player -> {
-                SuperiorPlayer superiorPlayer = playersHandler.getSuperiorPlayer(player);
-                player.closeInventory();
-                superiorPlayer.updateWorldBorder(null);
-                if (superiorPlayer.hasIslandFlyEnabled()) {
-                    player.setAllowFlight(false);
-                    player.setFlying(false);
-                }
-            });
-        } catch (Exception ex) {
-            ex.printStackTrace();
-            PluginDebugger.debug(ex);
-        } finally {
-            CalcTask.cancelTask();
-            Executor.close();
-            SuperiorSkyblockPlugin.log("Closing database. This may hang the server. Do not shut it down, or data may get lost.");
-
-            //pluginDebugger.cancel();
-            dataHandler.closeConnection();
+            SortingComparators.initializeTopIslandMembersSorting();
+        } catch (IllegalArgumentException error) {
+            shouldEnable = false;
+            log("&cThe TopIslandMembersSorting was already initialized. " +
+                    "This can be caused by a reload or another plugin initializing it.");
         }
+
+        this.servicesHandler.registerPlaceholdersService(new PlaceholdersServiceImpl());
+        this.servicesHandler.registerHologramsService(new HologramsServiceImpl(this));
+        this.servicesHandler.registerEnderDragonService(new DragonBattleServiceImpl(this));
+        this.servicesHandler.registerBossBarsService(new BossBarsServiceImpl(this));
+        this.servicesHandler.registerMessagesService(new MessagesServiceImpl());
     }
 
     @Override
     public void onEnable() {
         try {
+            if (SuperiorSkyblockAPI.getSuperiorSkyblock() == null) {
+                shouldEnable = false;
+                ManagerLoadException.handle(new ManagerLoadException("The API instance was not initialized properly. Contact Ome_R regarding this!",
+                        ManagerLoadException.ErrorLevel.SERVER_SHUTDOWN));
+                return;
+            }
+
             if (!shouldEnable) {
                 Bukkit.shutdown();
                 return;
             }
 
-            Executor.init(this);
+            BukkitExecutor.init(this);
 
-            IslandPrivileges.registerPrivileges();
-            SortingTypes.registerSortingTypes();
-            IslandFlags.registerFlags();
             loadUpgradeCostLoaders();
 
-            EnchantsUtils.registerGlowEnchantment();
+            GlowEnchantment.registerGlowEnchantment();
 
             try {
-                settingsHandler = new SettingsHandler(this);
-            } catch (HandlerLoadException ex) {
-                if (!HandlerLoadException.handle(ex)) {
+                settingsHandler = new SettingsManagerImpl(this);
+            } catch (ManagerLoadException ex) {
+                if (!ManagerLoadException.handle(ex)) {
                     shouldEnable = false;
                     return;
                 }
@@ -251,14 +232,16 @@ public final class SuperiorSkyblockPlugin extends JavaPlugin implements Superior
 
             modulesHandler.loadData();
 
-            EventsCaller.callPluginInitializeEvent(this);
+            EventsBus.PluginInitializeResult eventResult = eventsBus.callPluginInitializeEvent(this);
+            this.playersHandler.setPlayersContainer(Optional.ofNullable(eventResult.getPlayersContainer()).orElse(new DefaultPlayersContainer()));
+            this.gridHandler.setIslandsContainer(Optional.ofNullable(eventResult.getIslandsContainer()).orElse(new DefaultIslandsContainer(this)));
 
             modulesHandler.enableModules(ModuleLoadTime.BEFORE_WORLD_CREATION);
 
             try {
                 providersHandler.getWorldsProvider().prepareWorlds();
             } catch (RuntimeException ex) {
-                HandlerLoadException handlerError = new HandlerLoadException(ex.getMessage(), HandlerLoadException.ErrorLevel.SERVER_SHUTDOWN);
+                ManagerLoadException handlerError = new ManagerLoadException(ex.getMessage(), ManagerLoadException.ErrorLevel.SERVER_SHUTDOWN);
                 shouldEnable = false;
                 handlerError.printStackTrace();
                 PluginDebugger.debug(handlerError);
@@ -268,31 +251,25 @@ public final class SuperiorSkyblockPlugin extends JavaPlugin implements Superior
 
             try {
                 reloadPlugin(true);
-            } catch (HandlerLoadException error) {
-                HandlerLoadException.handle(error);
+            } catch (ManagerLoadException error) {
+                ManagerLoadException.handle(error);
                 shouldEnable = false;
                 return;
             }
 
             try {
-                safeEventsRegister(new BlocksListener(this));
-                safeEventsRegister(new ChunksListener(this));
-                safeEventsRegister(new CustomEventsListener(this));
-                if (settingsHandler.getWorlds().getEnd().isDragonFight())
-                    safeEventsRegister(new DragonListener(this));
-                safeEventsRegister(new MenusListener(this));
-                safeEventsRegister(new PlayersListener(this));
-                safeEventsRegister(new ProtectionListener(this));
-                safeEventsRegister(new SettingsListener(this));
+                bukkitListeners.register();
             } catch (RuntimeException ex) {
-                HandlerLoadException handlerError = new HandlerLoadException("Cannot load plugin due to a missing event: " + ex.getMessage() + " - contact @Ome_R!",
-                        HandlerLoadException.ErrorLevel.CONTINUE);
+                ManagerLoadException handlerError = new ManagerLoadException("Cannot load plugin due to a missing event: " + ex.getMessage() + " - contact @Ome_R!",
+                        ManagerLoadException.ErrorLevel.CONTINUE);
                 shouldEnable = false;
                 handlerError.printStackTrace();
                 PluginDebugger.debug(handlerError);
                 Bukkit.shutdown();
                 return;
             }
+
+            modulesHandler.enableModules(ModuleLoadTime.AFTER_HANDLERS_LOADING);
 
             if (updater.isOutdated()) {
                 log("");
@@ -303,7 +280,7 @@ public final class SuperiorSkyblockPlugin extends JavaPlugin implements Superior
 
             ChunksProvider.start();
 
-            Executor.sync(() -> {
+            BukkitExecutor.sync(() -> {
                 for (Player player : Bukkit.getOnlinePlayers()) {
                     SuperiorPlayer superiorPlayer = playersHandler.getSuperiorPlayer(player);
                     superiorPlayer.updateLastTimeStatus();
@@ -326,6 +303,9 @@ public final class SuperiorSkyblockPlugin extends JavaPlugin implements Superior
                         island.setPlayerInside(superiorPlayer, true);
                 }
             }, 1L);
+
+            eventsBus.callPluginInitializedEvent(this);
+
         } catch (Throwable ex) {
             shouldEnable = false;
             ex.printStackTrace();
@@ -335,25 +315,62 @@ public final class SuperiorSkyblockPlugin extends JavaPlugin implements Superior
     }
 
     @Override
+    public void onDisable() {
+        if (!shouldEnable)
+            return;
+
+        ChunksProvider.stop();
+        BukkitExecutor.syncDatabaseCalls();
+
+        try {
+            dataHandler.saveDatabase(false);
+
+            gridHandler.disablePlugin();
+
+            for (Island island : gridHandler.getIslandsToPurge())
+                island.disbandIsland();
+
+            playersHandler.savePlayers();
+            gridHandler.saveIslands();
+            stackedBlocksHandler.saveStackedBlocks();
+
+            modulesHandler.getModules().forEach(modulesHandler::unregisterModule);
+
+            // Shutdown task is running from another thread, causing closing of inventories to cause errors.
+            // This check should prevent it.
+            if (Bukkit.isPrimaryThread()) {
+                Bukkit.getOnlinePlayers().forEach(player -> {
+                    SuperiorPlayer superiorPlayer = playersHandler.getSuperiorPlayer(player);
+                    player.closeInventory();
+                    superiorPlayer.updateWorldBorder(null);
+                    if (superiorPlayer.hasIslandFlyEnabled()) {
+                        player.setAllowFlight(false);
+                        player.setFlying(false);
+                    }
+                });
+            }
+        } catch (Exception ex) {
+            ex.printStackTrace();
+            PluginDebugger.debug(ex);
+        } finally {
+            // SuperiorSkyblockPlugin.log("Unloading worlds...");
+            // unloadIslandWorlds();
+
+            SuperiorSkyblockPlugin.log("Shutting down calculation task...");
+            CalcTask.cancelTask();
+
+            SuperiorSkyblockPlugin.log("Shutting down executor");
+            BukkitExecutor.close();
+
+            SuperiorSkyblockPlugin.log("Closing database. This may hang the server. Do not shut it down, or data may get lost.");
+            //pluginDebugger.cancel();
+            dataHandler.closeConnection();
+        }
+    }
+
+    @Override
     public ChunkGenerator getDefaultWorldGenerator(String worldName, String id) {
         return getGenerator();
-    }
-
-    private void initCustomFilter() {
-        getLogger().setFilter(record -> {
-            Matcher matcher = LISTENER_REGISTER_FAILURE.matcher(record.getMessage());
-            if (matcher.find())
-                listenerRegisterFailure = matcher.group(3);
-
-            return true;
-        });
-    }
-
-    private void safeEventsRegister(Listener listener) {
-        listenerRegisterFailure = "";
-        getServer().getPluginManager().registerEvents(listener, this);
-        if (!listenerRegisterFailure.isEmpty())
-            throw new RuntimeException(listenerRegisterFailure);
     }
 
     public Updater getUpdater() {
@@ -364,26 +381,44 @@ public final class SuperiorSkyblockPlugin extends JavaPlugin implements Superior
         String version = getServer().getClass().getPackage().getName().split("\\.")[3];
         try {
             nmsAlgorithms = loadNMSClass("NMSAlgorithmsImpl", version);
+
+            if (!nmsAlgorithms.isMappingsSupported()) {
+                new ManagerLoadException(
+                        "The plugin doesn't support your version mappings.\n" +
+                                "Please try a different version.",
+                        ManagerLoadException.ErrorLevel.SERVER_SHUTDOWN).printStackTrace();
+                return false;
+            }
+
             nmsChunks = loadNMSClass("NMSChunksImpl", version);
             nmsEntities = loadNMSClass("NMSEntitiesImpl", version);
             nmsHolograms = loadNMSClass("NMSHologramsImpl", version);
             nmsPlayers = loadNMSClass("NMSPlayersImpl", version);
             nmsTags = loadNMSClass("NMSTagsImpl", version);
             nmsWorld = loadNMSClass("NMSWorldImpl", version);
-            return true;
         } catch (Exception ex) {
-            new HandlerLoadException(
+            ex.printStackTrace();
+            new ManagerLoadException(
                     "The plugin doesn't support your minecraft version.\n" +
                             "Please try a different version.",
-                    HandlerLoadException.ErrorLevel.SERVER_SHUTDOWN).printStackTrace();
+                    ManagerLoadException.ErrorLevel.SERVER_SHUTDOWN).printStackTrace();
             PluginDebugger.debug(ex);
             return false;
         }
+
+        return true;
     }
 
     private <T> T loadNMSClass(String className, String version) throws Exception {
-        // noinspection unchecked
-        return (T) Class.forName(String.format("com.bgsoftware.superiorskyblock.nms.%s.%s", version, className)).newInstance();
+        Class<?> nmsClass = Class.forName(String.format("com.bgsoftware.superiorskyblock.nms.%s.%s", version, className));
+        try {
+            Constructor<?> constructor = nmsClass.getConstructor(SuperiorSkyblockPlugin.class);
+            // noinspection unchecked
+            return (T) constructor.newInstance(this);
+        } catch (NoSuchMethodException error) {
+            // noinspection unchecked
+            return (T) nmsClass.newInstance();
+        }
     }
 
     public ChunkGenerator getGenerator() {
@@ -413,9 +448,8 @@ public final class SuperiorSkyblockPlugin extends JavaPlugin implements Superior
                 if (generatorsFilesList != null) {
                     for (File file : generatorsFilesList) {
                         //noinspection deprecation
-                        Optional<Class<?>> generatorClassOptional = FileUtils.getClasses(file.toURL(), ChunkGenerator.class).stream().findFirst();
-                        if (generatorClassOptional.isPresent()) {
-                            Class<?> generatorClass = generatorClassOptional.get();
+                        Class<?> generatorClass = JarFiles.getClass(file.toURL(), ChunkGenerator.class);
+                        if (generatorClass != null) {
                             for (Constructor<?> constructor : generatorClass.getConstructors()) {
                                 if (constructor.getParameterCount() == 0) {
                                     worldGenerator = (ChunkGenerator) generatorClass.newInstance();
@@ -450,25 +484,25 @@ public final class SuperiorSkyblockPlugin extends JavaPlugin implements Superior
         }
     }
 
-    public void reloadPlugin(boolean loadGrid) throws HandlerLoadException {
-        HeadUtils.readTextures(this);
+    public void reloadPlugin(boolean loadGrid) throws ManagerLoadException {
+        ItemSkulls.readTextures(this);
 
         if (!loadGrid) {
-            settingsHandler = new SettingsHandler(this);
+            settingsHandler = new SettingsManagerImpl(this);
         } else {
             commandsHandler.loadData();
             modulesHandler.enableModules(ModuleLoadTime.NORMAL);
         }
 
         if (!checkScriptEngine()) {
-            throw new HandlerLoadException(
+            throw new ManagerLoadException(
                     "It seems like the script engine of the plugin is corrupted.\n" +
                             "This may occur by one of the following reasons:\n" +
                             "1. You have a module/plugin that sets a custom script that doesn't work well.\n" +
                             "2. You're using Java 16 without installing an external module engine.\n" +
                             "If that's the case, check out the following link:\n" +
                             "https://github.com/BG-Software-LLC/SuperiorSkyblock2-NashornEngine",
-                    HandlerLoadException.ErrorLevel.SERVER_SHUTDOWN);
+                    ManagerLoadException.ErrorLevel.SERVER_SHUTDOWN);
         }
 
         blockValuesHandler.loadData();
@@ -481,7 +515,7 @@ public final class SuperiorSkyblockPlugin extends JavaPlugin implements Superior
             playersHandler.loadData();
             gridHandler.loadData();
         } else {
-            Executor.sync(gridHandler::updateSpawn, 1L);
+            BukkitExecutor.sync(gridHandler::updateSpawn, 1L);
             gridHandler.syncUpgrades();
         }
 
@@ -492,12 +526,14 @@ public final class SuperiorSkyblockPlugin extends JavaPlugin implements Superior
         if (loadGrid) {
             dataHandler.loadData();
             stackedBlocksHandler.loadData();
+            SortingType.values().forEach(gridHandler::sortIslands);
+            modulesHandler.loadModulesData(this);
+            modulesHandler.enableModules(ModuleLoadTime.AFTER_MODULE_DATA_LOAD);
         } else {
-            modulesHandler.enableModules(ModuleLoadTime.AFTER_HANDLERS_LOADING);
-            modulesHandler.getModules().forEach(pluginModule -> pluginModule.onReload(this));
+            modulesHandler.reloadModules(this);
         }
 
-        Executor.sync(() -> {
+        BukkitExecutor.sync(() -> {
             for (Player player : Bukkit.getOnlinePlayers()) {
                 SuperiorPlayer superiorPlayer = playersHandler.getSuperiorPlayer(player);
                 Island island = gridHandler.getIslandAt(player.getLocation());
@@ -518,37 +554,37 @@ public final class SuperiorSkyblockPlugin extends JavaPlugin implements Superior
     }
 
     @Override
-    public GridHandler getGrid() {
+    public GridManagerImpl getGrid() {
         return gridHandler;
     }
 
     @Override
-    public StackedBlocksHandler getStackedBlocks() {
+    public StackedBlocksManagerImpl getStackedBlocks() {
         return stackedBlocksHandler;
     }
 
     @Override
-    public BlockValuesHandler getBlockValues() {
+    public BlockValuesManagerImpl getBlockValues() {
         return blockValuesHandler;
     }
 
     @Override
-    public SchematicsHandler getSchematics() {
+    public SchematicsManagerImpl getSchematics() {
         return schematicsHandler;
     }
 
     @Override
-    public PlayersHandler getPlayers() {
+    public PlayersManagerImpl getPlayers() {
         return playersHandler;
     }
 
     @Override
-    public RolesHandler getRoles() {
+    public RolesManagerImpl getRoles() {
         return rolesHandler;
     }
 
     @Override
-    public MissionsHandler getMissions() {
+    public MissionsManagerImpl getMissions() {
         return missionsHandler;
     }
 
@@ -558,37 +594,37 @@ public final class SuperiorSkyblockPlugin extends JavaPlugin implements Superior
     }
 
     @Override
-    public KeysHandler getKeys() {
+    public KeysManagerImpl getKeys() {
         return keysHandler;
     }
 
     @Override
-    public ProvidersHandler getProviders() {
+    public ProvidersManagerImpl getProviders() {
         return providersHandler;
     }
 
     @Override
-    public UpgradesHandler getUpgrades() {
+    public UpgradesManagerImpl getUpgrades() {
         return upgradesHandler;
     }
 
     @Override
-    public CommandsHandler getCommands() {
+    public CommandsManagerImpl getCommands() {
         return commandsHandler;
     }
 
     @Override
-    public SettingsHandler getSettings() {
+    public SettingsManagerImpl getSettings() {
         return settingsHandler;
     }
 
     @Override
-    public FactoriesHandler getFactory() {
+    public FactoriesManagerImpl getFactory() {
         return factoriesHandler;
     }
 
     @Override
-    public ModulesHandler getModules() {
+    public ModulesManagerImpl getModules() {
         return modulesHandler;
     }
 
@@ -603,16 +639,26 @@ public final class SuperiorSkyblockPlugin extends JavaPlugin implements Superior
     }
 
     @Override
+    @Deprecated
     public WorldEventsManager getWorldEventsManager() {
-        return worldEventsManager;
+        return getListener(ChunksListener.class).get().getWorldEventsManager();
     }
 
     @Override
+    @Deprecated
     public void setWorldEventsManager(@Nullable WorldEventsManager worldEventsManager) {
-        this.worldEventsManager = worldEventsManager == null ? new WorldEventsManagerImpl(this) : worldEventsManager;
+        getListener(ChunksListener.class).get().setWorldEventsManager(worldEventsManager);
     }
 
-    public void setSettings(SettingsHandler settingsHandler) {
+    public EventsBus getEventsBus() {
+        return eventsBus;
+    }
+
+    public ServicesHandler getServices() {
+        return servicesHandler;
+    }
+
+    public void setSettings(SettingsManagerImpl settingsHandler) {
         this.settingsHandler = settingsHandler;
     }
 
@@ -655,6 +701,10 @@ public final class SuperiorSkyblockPlugin extends JavaPlugin implements Superior
 
     public NMSWorld getNMSWorld() {
         return nmsWorld;
+    }
+
+    public <E extends Listener> Singleton<E> getListener(Class<E> listenerClass) {
+        return bukkitListeners.getListener(listenerClass);
     }
 
     public String getFileName() {

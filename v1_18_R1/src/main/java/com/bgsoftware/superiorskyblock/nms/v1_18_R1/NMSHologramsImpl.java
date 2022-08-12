@@ -1,15 +1,15 @@
 package com.bgsoftware.superiorskyblock.nms.v1_18_R1;
 
-import com.bgsoftware.superiorskyblock.hologram.Hologram;
+import com.bgsoftware.superiorskyblock.api.service.hologram.Hologram;
 import com.bgsoftware.superiorskyblock.nms.NMSHolograms;
-import com.bgsoftware.superiorskyblock.nms.v1_18_R1.mapping.level.WorldServer;
+import com.bgsoftware.superiorskyblock.nms.mapping.Remap;
+import com.bgsoftware.superiorskyblock.nms.v1_18_R1.mapping.net.minecraft.server.level.WorldServer;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.network.chat.IChatBaseComponent;
 import net.minecraft.sounds.SoundEffect;
 import net.minecraft.world.EnumHand;
 import net.minecraft.world.EnumInteractionResult;
 import net.minecraft.world.damagesource.DamageSource;
-import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EnumItemSlot;
 import net.minecraft.world.entity.decoration.EntityArmorStand;
 import net.minecraft.world.entity.player.EntityHuman;
@@ -23,6 +23,8 @@ import org.bukkit.craftbukkit.v1_18_R1.CraftWorld;
 import org.bukkit.craftbukkit.v1_18_R1.entity.CraftArmorStand;
 import org.bukkit.craftbukkit.v1_18_R1.entity.CraftEntity;
 import org.bukkit.craftbukkit.v1_18_R1.util.CraftChatMessage;
+import org.bukkit.entity.ArmorStand;
+import org.bukkit.entity.Entity;
 
 @SuppressWarnings("unused")
 public final class NMSHologramsImpl implements NMSHolograms {
@@ -36,12 +38,25 @@ public final class NMSHologramsImpl implements NMSHolograms {
         return entityHologram;
     }
 
+    @Override
+    public boolean isHologram(Entity entity) {
+        return ((CraftEntity) entity).getHandle() instanceof Hologram;
+    }
+
     private static final class EntityHologram extends EntityArmorStand implements Hologram {
 
         private static final AxisAlignedBB EMPTY_BOUND = new AxisAlignedBB(0D, 0D, 0D, 0D, 0D, 0D);
 
         private CraftEntity bukkitEntity;
 
+        @Remap(classPath = "net.minecraft.world.entity.decoration.ArmorStand", name = "setInvisible", type = Remap.Type.METHOD, remappedName = "j")
+        @Remap(classPath = "net.minecraft.world.entity.decoration.ArmorStand", name = "setSmall", type = Remap.Type.METHOD, remappedName = "a")
+        @Remap(classPath = "net.minecraft.world.entity.decoration.ArmorStand", name = "setShowArms", type = Remap.Type.METHOD, remappedName = "r")
+        @Remap(classPath = "net.minecraft.world.entity.Entity", name = "setNoGravity", type = Remap.Type.METHOD, remappedName = "e")
+        @Remap(classPath = "net.minecraft.world.entity.decoration.ArmorStand", name = "setNoBasePlate", type = Remap.Type.METHOD, remappedName = "s")
+        @Remap(classPath = "net.minecraft.world.entity.decoration.ArmorStand", name = "setMarker", type = Remap.Type.METHOD, remappedName = "t")
+        @Remap(classPath = "net.minecraft.world.entity.Entity", name = "setCustomNameVisible", type = Remap.Type.METHOD, remappedName = "n")
+        @Remap(classPath = "net.minecraft.world.entity.Entity", name = "setBoundingBox", type = Remap.Type.METHOD, remappedName = "a")
         EntityHologram(WorldServer world, double x, double y, double z) {
             super(world.getHandle(), x, y, z);
             j(true); // Invisible
@@ -55,16 +70,29 @@ public final class NMSHologramsImpl implements NMSHolograms {
             super.a(EMPTY_BOUND);
         }
 
+        @Remap(classPath = "net.minecraft.world.entity.Entity",
+                name = "setCustomName",
+                type = Remap.Type.METHOD,
+                remappedName = "a")
         @Override
         public void setHologramName(String name) {
-            super.a(CraftChatMessage.fromString(name)[0]);
+            super.a(CraftChatMessage.fromStringOrNull(name));
         }
 
         @Override
         public void removeHologram() {
-            super.a(Entity.RemovalReason.b);
+            super.a(RemovalReason.b);
         }
 
+        @Override
+        public ArmorStand getHandle() {
+            return this.getBukkitEntity();
+        }
+
+        @Remap(classPath = "net.minecraft.world.entity.Entity",
+                name = "onGround",
+                type = Remap.Type.FIELD,
+                remappedName = "z")
         @Override
         public void inactiveTick() {
             // Disable normal ticking for this entity.
@@ -75,11 +103,19 @@ public final class NMSHologramsImpl implements NMSHolograms {
             }
         }
 
+        @Remap(classPath = "net.minecraft.world.entity.Entity",
+                name = "repositionEntityAfterLoad",
+                type = Remap.Type.METHOD,
+                remappedName = "bj")
         @Override
-        public boolean bi() {
+        public boolean bj() {
             return false;
         }
 
+        @Remap(classPath = "net.minecraft.world.entity.Entity",
+                name = "getBoundingBoxForCulling",
+                type = Remap.Type.METHOD,
+                remappedName = "cx")
         @Override
         public AxisAlignedBB cx() {
             return EMPTY_BOUND;
@@ -90,22 +126,38 @@ public final class NMSHologramsImpl implements NMSHolograms {
             // Prevent stand being equipped
         }
 
+        @Remap(classPath = "net.minecraft.world.entity.decoration.ArmorStand",
+                name = "addAdditionalSaveData",
+                type = Remap.Type.METHOD,
+                remappedName = "b")
         @Override
         public void b(NBTTagCompound nbttagcompound) {
             // Do not save NBT.
         }
 
+        @Remap(classPath = "net.minecraft.world.entity.decoration.ArmorStand",
+                name = "readAdditionalSaveData",
+                type = Remap.Type.METHOD,
+                remappedName = "a")
         @Override
         public void a(NBTTagCompound nbttagcompound) {
             // Do not load NBT.
         }
 
+        @Remap(classPath = "net.minecraft.world.entity.decoration.ArmorStand",
+                name = "interactAt",
+                type = Remap.Type.METHOD,
+                remappedName = "a")
         @Override
         public EnumInteractionResult a(EntityHuman human, Vec3D vec3d, EnumHand enumhand) {
             // Prevent stand being equipped
             return EnumInteractionResult.d;
         }
 
+        @Remap(classPath = "net.minecraft.world.entity.decoration.ArmorStand",
+                name = "tick",
+                type = Remap.Type.METHOD,
+                remappedName = "k")
         @Override
         public void k() {
             // Disable normal ticking for this entity.
@@ -121,40 +173,64 @@ public final class NMSHologramsImpl implements NMSHolograms {
         }
 
         @Override
-        public CraftEntity getBukkitEntity() {
+        public CraftArmorStand getBukkitEntity() {
             if (bukkitEntity == null) {
                 bukkitEntity = new CraftArmorStand((CraftServer) Bukkit.getServer(), this);
             }
-            return bukkitEntity;
+            return (CraftArmorStand) bukkitEntity;
         }
 
+        @Remap(classPath = "net.minecraft.world.entity.Entity",
+                name = "remove",
+                type = Remap.Type.METHOD,
+                remappedName = "a")
         @Override
-        public void a(Entity.RemovalReason entity_removalreason) {
+        public void a(RemovalReason entity_removalreason) {
             // Prevent being killed.
         }
 
+        @Remap(classPath = "net.minecraft.world.entity.Entity",
+                name = "playSound",
+                type = Remap.Type.METHOD,
+                remappedName = "a")
         @Override
         public void a(SoundEffect soundeffect, float f, float f1) {
             // Remove sounds.
         }
 
+        @Remap(classPath = "net.minecraft.world.entity.Entity",
+                name = "saveAsPassenger",
+                type = Remap.Type.METHOD,
+                remappedName = "d")
         @Override
         public boolean d(NBTTagCompound nbttagcompound) {
             // Do not save NBT.
             return false;
         }
 
+        @Remap(classPath = "net.minecraft.world.entity.Entity",
+                name = "saveWithoutId",
+                type = Remap.Type.METHOD,
+                remappedName = "f")
         @Override
         public NBTTagCompound f(NBTTagCompound nbttagcompound) {
             // Do not save NBT.
             return nbttagcompound;
         }
 
+        @Remap(classPath = "net.minecraft.world.entity.Entity",
+                name = "load",
+                type = Remap.Type.METHOD,
+                remappedName = "g")
         @Override
         public void g(NBTTagCompound nbttagcompound) {
             // Do not load NBT.
         }
 
+        @Remap(classPath = "net.minecraft.world.entity.Entity",
+                name = "isInvulnerableTo",
+                type = Remap.Type.METHOD,
+                remappedName = "b")
         @Override
         public boolean b(DamageSource source) {
             /*
@@ -165,11 +241,19 @@ public final class NMSHologramsImpl implements NMSHolograms {
             return true;
         }
 
-        @Override
+        @Remap(classPath = "net.minecraft.world.entity.Entity",
+                name = "setCustomName",
+                type = Remap.Type.METHOD,
+                remappedName = "a")
+//        @Override
         public void a(IChatBaseComponent ichatbasecomponent) {
             // Locks the custom name.
         }
 
+        @Remap(classPath = "net.minecraft.world.entity.Entity",
+                name = "setCustomNameVisible",
+                type = Remap.Type.METHOD,
+                remappedName = "n")
         @Override
         public void n(boolean flag) {
             // Locks the custom name.

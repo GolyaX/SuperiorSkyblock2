@@ -1,19 +1,18 @@
 package com.bgsoftware.superiorskyblock.commands.admin;
 
-import com.bgsoftware.superiorskyblock.lang.Message;
 import com.bgsoftware.superiorskyblock.SuperiorSkyblockPlugin;
 import com.bgsoftware.superiorskyblock.api.wrappers.SuperiorPlayer;
 import com.bgsoftware.superiorskyblock.commands.CommandTabCompletes;
 import com.bgsoftware.superiorskyblock.commands.ISuperiorCommand;
+import com.bgsoftware.superiorskyblock.core.messages.Message;
 import org.bukkit.ChatColor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-public final class CmdAdminSpawn implements ISuperiorCommand {
+public class CmdAdminSpawn implements ISuperiorCommand {
 
     @Override
     public List<String> getAliases() {
@@ -27,7 +26,7 @@ public final class CmdAdminSpawn implements ISuperiorCommand {
 
     @Override
     public String getUsage(java.util.Locale locale) {
-        return "admin spawn [player-name]";
+        return "admin spawn [" + Message.COMMAND_ARGUMENT_PLAYER_NAME.getMessage(locale) + "]";
     }
 
     @Override
@@ -77,7 +76,7 @@ public final class CmdAdminSpawn implements ISuperiorCommand {
 
     @Override
     public List<String> tabComplete(SuperiorSkyblockPlugin plugin, CommandSender sender, String[] args) {
-        return args.length == 3 ? CommandTabCompletes.getOnlinePlayers(plugin, args[2], false) : new ArrayList<>();
+        return args.length == 3 ? CommandTabCompletes.getOnlinePlayers(plugin, args[2], false) : Collections.emptyList();
     }
 
 }

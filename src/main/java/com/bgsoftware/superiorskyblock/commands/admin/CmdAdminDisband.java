@@ -1,22 +1,20 @@
 package com.bgsoftware.superiorskyblock.commands.admin;
 
-import com.bgsoftware.superiorskyblock.lang.Message;
 import com.bgsoftware.superiorskyblock.SuperiorSkyblockPlugin;
 import com.bgsoftware.superiorskyblock.api.island.Island;
 import com.bgsoftware.superiorskyblock.api.wrappers.SuperiorPlayer;
 import com.bgsoftware.superiorskyblock.commands.IAdminIslandCommand;
+import com.bgsoftware.superiorskyblock.core.formatting.Formatters;
+import com.bgsoftware.superiorskyblock.core.messages.Message;
+import com.bgsoftware.superiorskyblock.island.IslandUtils;
 import com.bgsoftware.superiorskyblock.module.BuiltinModules;
-import com.bgsoftware.superiorskyblock.utils.StringUtils;
-import com.bgsoftware.superiorskyblock.utils.events.EventsCaller;
-import com.bgsoftware.superiorskyblock.utils.islands.IslandUtils;
 import org.bukkit.command.CommandSender;
 
 import java.math.BigDecimal;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-public final class CmdAdminDisband implements IAdminIslandCommand {
+public class CmdAdminDisband implements IAdminIslandCommand {
 
     @Override
     public List<String> getAliases() {
@@ -62,8 +60,8 @@ public final class CmdAdminDisband implements IAdminIslandCommand {
 
     @Override
     public void execute(SuperiorSkyblockPlugin plugin, CommandSender sender, SuperiorPlayer targetPlayer, Island island, String[] args) {
-        if (EventsCaller.callIslandDisbandEvent(targetPlayer, island)) {
-            IslandUtils.sendMessage(island, Message.DISBAND_ANNOUNCEMENT, new ArrayList<>(), sender.getName());
+        if (plugin.getEventsBus().callIslandDisbandEvent(targetPlayer, island)) {
+            IslandUtils.sendMessage(island, Message.DISBAND_ANNOUNCEMENT, Collections.emptyList(), sender.getName());
 
             if (targetPlayer == null)
                 Message.DISBANDED_ISLAND_OTHER_NAME.send(sender, island.getName());
@@ -71,8 +69,9 @@ public final class CmdAdminDisband implements IAdminIslandCommand {
                 Message.DISBANDED_ISLAND_OTHER.send(sender, targetPlayer.getName());
 
             if (BuiltinModules.BANK.disbandRefund > 0 && island.getOwner().isOnline()) {
-                Message.DISBAND_ISLAND_BALANCE_REFUND.send(island.getOwner(), StringUtils.format(island.getIslandBank()
-                        .getBalance().multiply(BigDecimal.valueOf(BuiltinModules.BANK.disbandRefund))));
+                Message.DISBAND_ISLAND_BALANCE_REFUND.send(island.getOwner(),
+                        Formatters.NUMBER_FORMATTER.format(island.getIslandBank()
+                                .getBalance().multiply(BigDecimal.valueOf(BuiltinModules.BANK.disbandRefund))));
             }
 
             island.disbandIsland();

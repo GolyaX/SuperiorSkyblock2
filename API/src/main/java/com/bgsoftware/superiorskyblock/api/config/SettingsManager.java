@@ -1,13 +1,16 @@
 package com.bgsoftware.superiorskyblock.api.config;
 
+import com.bgsoftware.superiorskyblock.api.enums.TopIslandMembersSorting;
 import com.bgsoftware.superiorskyblock.api.handlers.BlockValuesManager;
 import com.bgsoftware.superiorskyblock.api.key.Key;
 import com.bgsoftware.superiorskyblock.api.objects.Pair;
+import com.bgsoftware.superiorskyblock.api.wrappers.BlockOffset;
 import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.configuration.ConfigurationSection;
 
 import java.math.BigDecimal;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -84,6 +87,12 @@ public interface SettingsManager {
     String getIslandTopOrder();
 
     /**
+     * Whether coop members are enabled.
+     * Config path: coop-members
+     */
+    boolean isCoopMembers();
+
+    /**
      * All settings related to the island-roles.
      * Config path: island-roles
      */
@@ -129,6 +138,11 @@ public interface SettingsManager {
      * Get all the interactable blocks.
      */
     List<String> getInteractables();
+
+    /**
+     * Get all the safe blocks.
+     */
+    Collection<Key> getSafeBlocks();
 
     /**
      * Whether visitors should take damage on islands or not.
@@ -462,6 +476,18 @@ public interface SettingsManager {
     List<String> getDisabledEvents();
 
     /**
+     * List of commands that should be disabled within the plugin.
+     * Config-path: disabled-commands
+     */
+    List<String> getDisabledCommands();
+
+    /**
+     * List of plugins that their hooks should not be enabled.
+     * Config-path: disabled-hooks
+     */
+    List<String> getDisabledHooks();
+
+    /**
      * Whether the schematic-name argument should be when executing /is create or not.
      * Config-path: schematic-name-argument
      */
@@ -543,6 +569,35 @@ public interface SettingsManager {
      */
     long getRecalcTaskTimeout();
 
+    /**
+     * Whether to detect the player's language automatically when he first joins the server.
+     * Config-path: auto-language-detection
+     */
+    boolean isAutoLanguageDetection();
+
+    /**
+     * Automatically uncoop players when there are no island members left online that can remove uncoop players.
+     * Config-path: auto-uncoop-when-alone
+     */
+    boolean isAutoUncoopWhenAlone();
+
+    /**
+     * Get the way to sort members in the top islands menu.
+     * Config-path: island-top-members-sorting
+     */
+    TopIslandMembersSorting getTopIslandMembersSorting();
+
+    /**
+     * Limit of the amount of bossbar tasks each player can have at the same time.
+     * Config-path: bossbar-limit
+     */
+    int getBossbarLimit();
+
+    /**
+     * Whether to delete unsafe warps when players try to teleport to them automatically.
+     * Config-path: delete-unsafe-warps
+     */
+    boolean getDeleteUnsafeWarps();
 
     interface Database {
 
@@ -937,9 +992,15 @@ public interface SettingsManager {
 
             /**
              * Whether ender-dragon fights should be enabled for islands or not.
-             * Config-path: worlds.end.dragon-fight
+             * Config-path: worlds.end.dragon-fight.enabled
              */
             boolean isDragonFight();
+
+            /**
+             * Get the offset of the portal from the center of the island.
+             * Config-path: worlds.end.dragon-fight.portal-offset
+             */
+            BlockOffset getPortalOffset();
 
         }
 

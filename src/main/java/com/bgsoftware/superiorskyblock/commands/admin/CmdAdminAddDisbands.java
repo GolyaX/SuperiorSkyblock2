@@ -1,18 +1,18 @@
 package com.bgsoftware.superiorskyblock.commands.admin;
 
-import com.bgsoftware.superiorskyblock.lang.Message;
 import com.bgsoftware.superiorskyblock.SuperiorSkyblockPlugin;
-import com.bgsoftware.superiorskyblock.api.objects.Pair;
 import com.bgsoftware.superiorskyblock.api.wrappers.SuperiorPlayer;
-import com.bgsoftware.superiorskyblock.commands.CommandArguments;
+import com.bgsoftware.superiorskyblock.commands.arguments.CommandArguments;
+import com.bgsoftware.superiorskyblock.commands.arguments.NumberArgument;
+import com.bgsoftware.superiorskyblock.core.messages.Message;
 import com.bgsoftware.superiorskyblock.commands.IAdminPlayerCommand;
-import com.bgsoftware.superiorskyblock.threads.Executor;
+import com.bgsoftware.superiorskyblock.core.threads.BukkitExecutor;
 import org.bukkit.command.CommandSender;
 
 import java.util.Arrays;
 import java.util.List;
 
-public final class CmdAdminAddDisbands implements IAdminPlayerCommand {
+public class CmdAdminAddDisbands implements IAdminPlayerCommand {
     @Override
     public List<String> getAliases() {
         return Arrays.asList("adddisbands", "givedisbands");
@@ -57,14 +57,14 @@ public final class CmdAdminAddDisbands implements IAdminPlayerCommand {
 
     @Override
     public void execute(SuperiorSkyblockPlugin plugin, CommandSender sender, List<SuperiorPlayer> targetPlayers, String[] args) {
-        Pair<Integer, Boolean> arguments = CommandArguments.getLimit(sender, args[3]);
+        NumberArgument<Integer> arguments = CommandArguments.getLimit(sender, args[3]);
 
-        if (!arguments.getValue())
+        if (!arguments.isSucceed())
             return;
 
-        int amount = arguments.getKey();
+        int amount = arguments.getNumber();
 
-        Executor.data(() -> targetPlayers.forEach(superiorPlayer -> superiorPlayer.setDisbands(superiorPlayer.getDisbands() + amount)));
+        BukkitExecutor.data(() -> targetPlayers.forEach(superiorPlayer -> superiorPlayer.setDisbands(superiorPlayer.getDisbands() + amount)));
 
         if (targetPlayers.size() > 1) {
             Message.DISBAND_GIVE_ALL.send(sender, amount);

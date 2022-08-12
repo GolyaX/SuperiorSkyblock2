@@ -3,31 +3,28 @@ package com.bgsoftware.superiorskyblock.player;
 import com.bgsoftware.superiorskyblock.SuperiorSkyblockPlugin;
 import com.bgsoftware.superiorskyblock.api.data.DatabaseBridge;
 import com.bgsoftware.superiorskyblock.api.data.DatabaseBridgeMode;
-import com.bgsoftware.superiorskyblock.api.data.PlayerDataHandler;
 import com.bgsoftware.superiorskyblock.api.enums.BorderColor;
 import com.bgsoftware.superiorskyblock.api.enums.HitActionResult;
 import com.bgsoftware.superiorskyblock.api.island.Island;
 import com.bgsoftware.superiorskyblock.api.island.IslandPrivilege;
 import com.bgsoftware.superiorskyblock.api.island.PlayerRole;
 import com.bgsoftware.superiorskyblock.api.missions.Mission;
+import com.bgsoftware.superiorskyblock.api.persistence.PersistentDataContainer;
 import com.bgsoftware.superiorskyblock.api.player.algorithm.PlayerTeleportAlgorithm;
 import com.bgsoftware.superiorskyblock.api.wrappers.BlockPosition;
 import com.bgsoftware.superiorskyblock.api.wrappers.SuperiorPlayer;
-import com.bgsoftware.superiorskyblock.database.DatabaseResult;
-import com.bgsoftware.superiorskyblock.database.EmptyDataHandler;
-import com.bgsoftware.superiorskyblock.database.bridge.IslandsDatabaseBridge;
-import com.bgsoftware.superiorskyblock.database.bridge.PlayersDatabaseBridge;
-import com.bgsoftware.superiorskyblock.database.cache.CachedPlayerInfo;
-import com.bgsoftware.superiorskyblock.database.cache.DatabaseCache;
-import com.bgsoftware.superiorskyblock.island.SPlayerRole;
-import com.bgsoftware.superiorskyblock.island.flags.IslandFlags;
-import com.bgsoftware.superiorskyblock.lang.PlayerLocales;
+import com.bgsoftware.superiorskyblock.core.SBlockPosition;
+import com.bgsoftware.superiorskyblock.core.SequentialListBuilder;
+import com.bgsoftware.superiorskyblock.core.database.DatabaseResult;
+import com.bgsoftware.superiorskyblock.core.database.bridge.IslandsDatabaseBridge;
+import com.bgsoftware.superiorskyblock.core.database.bridge.PlayersDatabaseBridge;
+import com.bgsoftware.superiorskyblock.core.database.cache.CachedPlayerInfo;
+import com.bgsoftware.superiorskyblock.core.database.cache.DatabaseCache;
+import com.bgsoftware.superiorskyblock.core.debug.PluginDebugger;
+import com.bgsoftware.superiorskyblock.core.formatting.Formatters;
+import com.bgsoftware.superiorskyblock.island.flag.IslandFlags;
+import com.bgsoftware.superiorskyblock.island.role.SPlayerRole;
 import com.bgsoftware.superiorskyblock.mission.MissionData;
-import com.bgsoftware.superiorskyblock.module.BuiltinModules;
-import com.bgsoftware.superiorskyblock.threads.Executor;
-import com.bgsoftware.superiorskyblock.utils.FileUtils;
-import com.bgsoftware.superiorskyblock.utils.debug.PluginDebugger;
-import com.bgsoftware.superiorskyblock.wrappers.SBlockPosition;
 import com.google.common.base.Preconditions;
 import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
@@ -40,8 +37,6 @@ import org.bukkit.scheduler.BukkitTask;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
-import java.io.File;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
@@ -51,12 +46,14 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 
-public final class SSuperiorPlayer implements SuperiorPlayer {
+public class SSuperiorPlayer implements SuperiorPlayer {
 
     private static final SuperiorSkyblockPlugin plugin = SuperiorSkyblockPlugin.getPlugin();
 
     private final DatabaseBridge databaseBridge = plugin.getFactory().createDatabaseBridge(this);
     private final PlayerTeleportAlgorithm playerTeleportAlgorithm = plugin.getFactory().createPlayerTeleportAlgorithm(this);
+    @Nullable
+    private PersistentDataContainer persistentDataContainer; // Lazy loading
 
     private final Map<Mission<?>, Integer> completedMissions = new ConcurrentHashMap<>();
     private final UUID uuid;
@@ -123,14 +120,20 @@ public final class SSuperiorPlayer implements SuperiorPlayer {
                 PlayerLocales.getDefaultLocale()
         );
 
-        superiorPlayer.textureValue = resultSet.getString("last_used_skin").orElse("");
-        superiorPlayer.lastTimeStatus = resultSet.getLong("last_time_updated")
-                .orElse(System.currentTimeMillis() / 1000);
+        try {
+            superiorPlayer.getDatabaseBridge().setDatabaseBridgeMode(DatabaseBridgeMode.IDLE);
 
-        CachedPlayerInfo cachedPlayerInfo = cache.getCachedInfo(uuid.get());
+            superiorPlayer.textureValue = resultSet.getString("last_used_skin").orElse("");
+            superiorPlayer.lastTimeStatus = resultSet.getLong("last_time_updated")
+                    .orElse(System.currentTimeMillis() / 1000);
 
-        if (cachedPlayerInfo != null)
-            superiorPlayer.loadFromCachedInfo(cachedPlayerInfo);
+            CachedPlayerInfo cachedPlayerInfo = cache.getCachedInfo(uuid.get());
+
+            if (cachedPlayerInfo != null)
+                superiorPlayer.loadFromCachedInfo(cachedPlayerInfo);
+        } finally {
+            superiorPlayer.getDatabaseBridge().setDatabaseBridgeMode(DatabaseBridgeMode.SAVE_DATA);
+        }
 
         return Optional.of(superiorPlayer);
     }
@@ -192,10 +195,13 @@ public final class SSuperiorPlayer implements SuperiorPlayer {
 
     @Override
     public void updateLastTimeStatus() {
-        lastTimeStatus = System.currentTimeMillis() / 1000;
+        setLastTimeStatus(System.currentTimeMillis() / 1000);
+    }
 
+    @Override
+    public void setLastTimeStatus(long lastTimeStatus) {
         PluginDebugger.debug("Action: Update Last Time, Player: " + getName() + ", Last Time: " + lastTimeStatus);
-
+        this.lastTimeStatus = lastTimeStatus;
         PlayersDatabaseBridge.saveLastTimeStatus(this);
     }
 
@@ -207,9 +213,22 @@ public final class SSuperiorPlayer implements SuperiorPlayer {
     @Override
     public void updateName() {
         Player player = asPlayer();
-        if (player != null) {
-            this.name = player.getName();
-            PlayersDatabaseBridge.savePlayerName(this);
+        if (player != null)
+            this.setName(player.getName());
+    }
+
+    @Override
+    public void setName(String name) {
+        Preconditions.checkNotNull(name, "name parameter cannot be null.");
+
+        if (!this.name.equals(name)) {
+            try {
+                plugin.getPlayers().getPlayersContainer().removePlayer(this);
+                this.name = name;
+                PlayersDatabaseBridge.savePlayerName(this);
+            } finally {
+                plugin.getPlayers().getPlayersContainer().addPlayer(this);
+            }
         }
     }
 
@@ -349,14 +368,24 @@ public final class SSuperiorPlayer implements SuperiorPlayer {
 
     @Override
     public void teleport(Island island) {
-        teleport(island, null);
+        this.teleport(island, (Consumer<Boolean>) null);
+    }
+
+    @Override
+    public void teleport(Island island, World.Environment environment) {
+        this.teleport(island, environment, null);
     }
 
     @Override
     public void teleport(Island island, @Nullable Consumer<Boolean> teleportResult) {
+        this.teleport(island, plugin.getSettings().getWorlds().getDefaultWorld(), teleportResult);
+    }
+
+    @Override
+    public void teleport(Island island, World.Environment environment, @Nullable Consumer<Boolean> teleportResult) {
         Player player = asPlayer();
         if (player != null) {
-            playerTeleportAlgorithm.teleport(player, island).whenComplete((result, error) -> {
+            playerTeleportAlgorithm.teleport(player, island, environment).whenComplete((result, error) -> {
                 if (teleportResult != null)
                     teleportResult.accept(error == null && result);
             });
@@ -469,8 +498,13 @@ public final class SSuperiorPlayer implements SuperiorPlayer {
 
     @Override
     public void toggleWorldBorder() {
-        worldBorderEnabled = !worldBorderEnabled;
-        PluginDebugger.debug("Action: Toggle Border, Player: " + getName() + ", Border: " + worldBorderEnabled);
+        setWorldBorderEnabled(!worldBorderEnabled);
+    }
+
+    @Override
+    public void setWorldBorderEnabled(boolean enabled) {
+        PluginDebugger.debug("Action: Toggle Border, Player: " + getName() + ", Border: " + enabled);
+        this.worldBorderEnabled = enabled;
         PlayersDatabaseBridge.saveToggledBorder(this);
     }
 
@@ -486,8 +520,13 @@ public final class SSuperiorPlayer implements SuperiorPlayer {
 
     @Override
     public void toggleBlocksStacker() {
-        blocksStackerEnabled = !blocksStackerEnabled;
-        PluginDebugger.debug("Action: Toggle Stacker, Player: " + getName() + ", Stacker: " + blocksStackerEnabled);
+        setBlocksStacker(!blocksStackerEnabled);
+    }
+
+    @Override
+    public void setBlocksStacker(boolean enabled) {
+        PluginDebugger.debug("Action: Toggle Stacker, Player: " + getName() + ", Stacker: " + enabled);
+        blocksStackerEnabled = enabled;
     }
 
     @Override
@@ -497,8 +536,13 @@ public final class SSuperiorPlayer implements SuperiorPlayer {
 
     @Override
     public void toggleSchematicMode() {
-        schematicModeEnabled = !schematicModeEnabled;
-        PluginDebugger.debug("Action: Toggle Schematic, Player: " + getName() + ", Schematic: " + schematicModeEnabled);
+        setSchematicMode(!schematicModeEnabled);
+    }
+
+    @Override
+    public void setSchematicMode(boolean enabled) {
+        PluginDebugger.debug("Action: Toggle Schematic, Player: " + getName() + ", Schematic: " + enabled);
+        schematicModeEnabled = enabled;
     }
 
     @Override
@@ -508,8 +552,13 @@ public final class SSuperiorPlayer implements SuperiorPlayer {
 
     @Override
     public void toggleTeamChat() {
-        teamChatEnabled = !teamChatEnabled;
-        PluginDebugger.debug("Action: Toggle Chat, Player: " + getName() + ", Chat: " + teamChatEnabled);
+        setTeamChat(!teamChatEnabled);
+    }
+
+    @Override
+    public void setTeamChat(boolean enabled) {
+        PluginDebugger.debug("Action: Toggle Chat, Player: " + getName() + ", Chat: " + enabled);
+        teamChatEnabled = enabled;
     }
 
     @Override
@@ -524,8 +573,13 @@ public final class SSuperiorPlayer implements SuperiorPlayer {
 
     @Override
     public void toggleBypassMode() {
-        bypassModeEnabled = !bypassModeEnabled;
-        PluginDebugger.debug("Action: Toggle Bypass, Player: " + getName() + ", Bypass: " + bypassModeEnabled);
+        setBypassMode(!bypassModeEnabled);
+    }
+
+    @Override
+    public void setBypassMode(boolean enabled) {
+        PluginDebugger.debug("Action: Toggle Bypass, Player: " + getName() + ", Bypass: " + enabled);
+        bypassModeEnabled = enabled;
     }
 
     @Override
@@ -557,8 +611,13 @@ public final class SSuperiorPlayer implements SuperiorPlayer {
 
     @Override
     public void toggleIslandFly() {
-        islandFly = !islandFly;
-        PluginDebugger.debug("Action: Toggle Fly, Player: " + getName() + ", Fly: " + islandFly);
+        setIslandFly(!islandFly);
+    }
+
+    @Override
+    public void setIslandFly(boolean enabled) {
+        PluginDebugger.debug("Action: Toggle Fly, Player: " + getName() + ", Fly: " + enabled);
+        islandFly = enabled;
         PlayersDatabaseBridge.saveIslandFly(this);
     }
 
@@ -569,8 +628,13 @@ public final class SSuperiorPlayer implements SuperiorPlayer {
 
     @Override
     public void toggleAdminSpy() {
-        adminSpyEnabled = !adminSpyEnabled;
-        PluginDebugger.debug("Action: Toggle Spy, Player: " + getName() + ", Spy: " + adminSpyEnabled);
+        setAdminSpy(!adminSpyEnabled);
+    }
+
+    @Override
+    public void setAdminSpy(boolean enabled) {
+        PluginDebugger.debug("Action: Toggle Spy, Player: " + getName() + ", Spy: " + enabled);
+        adminSpyEnabled = enabled;
     }
 
     @Override
@@ -597,8 +661,9 @@ public final class SSuperiorPlayer implements SuperiorPlayer {
 
     @Override
     public void setSchematicPos1(Block block) {
-        this.schematicPos1 = block == null ? null : SBlockPosition.of(block.getLocation());
-        PluginDebugger.debug("Action: Schematic Position #1, Player: " + getName() + ", Pos: " + schematicPos1);
+        this.schematicPos1 = block == null ? null : new SBlockPosition(block.getLocation());
+        PluginDebugger.debug("Action: Schematic Position #1, Player: " + getName() + ", Pos: " +
+                (block == null ? "None" : Formatters.LOCATION_FORMATTER.format(block.getLocation())));
     }
 
     @Override
@@ -608,8 +673,9 @@ public final class SSuperiorPlayer implements SuperiorPlayer {
 
     @Override
     public void setSchematicPos2(Block block) {
-        this.schematicPos2 = block == null ? null : SBlockPosition.of(block.getLocation());
-        PluginDebugger.debug("Action: Schematic Position #2, Player: " + getName() + ", Pos: " + schematicPos2);
+        this.schematicPos2 = block == null ? null : new SBlockPosition(block.getLocation());
+        PluginDebugger.debug("Action: Schematic Position #2, Player: " + getName() + ", Pos: " +
+                (block == null ? "None" : Formatters.LOCATION_FORMATTER.format(block.getLocation())));
     }
 
     /*
@@ -685,18 +751,11 @@ public final class SSuperiorPlayer implements SuperiorPlayer {
         this.borderColor = otherPlayer.getBorderColor();
         this.lastTimeStatus = otherPlayer.getLastTimeStatus();
 
-        // We want to convert the data of the missions data file
-        Executor.async(() -> FileUtils.replaceString(new File(BuiltinModules.MISSIONS.getDataFolder(), "_data.yml"),
-                otherPlayer.getUniqueId() + "", uuid + ""));
+        // Convert data for missions
+        plugin.getMissions().convertPlayerData(otherPlayer, this);
 
         PlayersDatabaseBridge.updatePlayer(this);
         PlayersDatabaseBridge.deletePlayer(otherPlayer);
-    }
-
-    @Override
-    @Deprecated
-    public PlayerDataHandler getDataHandler() {
-        return EmptyDataHandler.getInstance();
     }
 
     @Override
@@ -705,30 +764,22 @@ public final class SSuperiorPlayer implements SuperiorPlayer {
     }
 
     @Override
+    public PersistentDataContainer getPersistentDataContainer() {
+        if (persistentDataContainer == null)
+            persistentDataContainer = plugin.getFactory().createPersistentDataContainer(this);
+        return persistentDataContainer;
+    }
+
+    @Override
     public void completeMission(Mission<?> mission) {
         Preconditions.checkNotNull(mission, "mission parameter cannot be null.");
-        PluginDebugger.debug("Action: Complete Mission, Player: " + getName() + ", Mission: " + mission.getName());
-        int finishCount = completedMissions.getOrDefault(mission, 0) + 1;
-        completedMissions.put(mission, finishCount);
-        PlayersDatabaseBridge.saveMission(this, mission, finishCount);
+        this.setAmountMissionCompleted(mission, completedMissions.getOrDefault(mission, 0) + 1);
     }
 
     @Override
     public void resetMission(Mission<?> mission) {
         Preconditions.checkNotNull(mission, "mission parameter cannot be null.");
-        PluginDebugger.debug("Action: Reset Mission, Player: " + getName() + ", Mission: " + mission.getName());
-
-        int finishCount = completedMissions.getOrDefault(mission, 0) - 1;
-
-        if (finishCount > 0) {
-            completedMissions.put(mission, finishCount);
-            PlayersDatabaseBridge.saveMission(this, mission, finishCount);
-        } else {
-            completedMissions.remove(mission);
-            PlayersDatabaseBridge.removeMission(this, mission);
-        }
-
-        mission.clearData(this);
+        this.setAmountMissionCompleted(mission, completedMissions.getOrDefault(mission, 0) - 1);
     }
 
     @Override
@@ -752,8 +803,25 @@ public final class SSuperiorPlayer implements SuperiorPlayer {
     }
 
     @Override
+    public void setAmountMissionCompleted(Mission<?> mission, int finishCount) {
+        Preconditions.checkNotNull(mission, "mission parameter cannot be null.");
+        PluginDebugger.debug("Action: Set Amount Mission Completed, Player: " + getName() +
+                ", Mission: " + mission.getName() + ", Amount: " + finishCount);
+
+        if (finishCount > 0) {
+            completedMissions.put(mission, finishCount);
+            PlayersDatabaseBridge.saveMission(this, mission, finishCount);
+        } else {
+            completedMissions.remove(mission);
+            PlayersDatabaseBridge.removeMission(this, mission);
+        }
+
+        mission.clearData(this);
+    }
+
+    @Override
     public List<Mission<?>> getCompletedMissions() {
-        return Collections.unmodifiableList(new ArrayList<>(completedMissions.keySet()));
+        return new SequentialListBuilder<Mission<?>>().build(completedMissions.keySet());
     }
 
     /*
@@ -789,6 +857,9 @@ public final class SSuperiorPlayer implements SuperiorPlayer {
         this.borderColor = cachedPlayerInfo.borderColor;
         this.userLocale = cachedPlayerInfo.userLocale;
         this.worldBorderEnabled = cachedPlayerInfo.worldBorderEnabled;
+        this.completedMissions.putAll(cachedPlayerInfo.completedMissions);
+        if (cachedPlayerInfo.persistentData.length > 0)
+            getPersistentDataContainer().load(cachedPlayerInfo.persistentData);
     }
 
 }

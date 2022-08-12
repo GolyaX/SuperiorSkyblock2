@@ -3,30 +3,28 @@ package com.bgsoftware.superiorskyblock.module.upgrades.commands;
 import com.bgsoftware.superiorskyblock.SuperiorSkyblockPlugin;
 import com.bgsoftware.superiorskyblock.api.island.Island;
 import com.bgsoftware.superiorskyblock.api.island.IslandPrivilege;
-import com.bgsoftware.superiorskyblock.api.objects.Pair;
+import com.bgsoftware.superiorskyblock.api.service.placeholders.PlaceholdersService;
 import com.bgsoftware.superiorskyblock.api.upgrades.Upgrade;
 import com.bgsoftware.superiorskyblock.api.upgrades.UpgradeLevel;
 import com.bgsoftware.superiorskyblock.api.upgrades.cost.UpgradeCost;
 import com.bgsoftware.superiorskyblock.api.wrappers.SuperiorPlayer;
-import com.bgsoftware.superiorskyblock.commands.CommandArguments;
 import com.bgsoftware.superiorskyblock.commands.CommandTabCompletes;
 import com.bgsoftware.superiorskyblock.commands.IPermissibleCommand;
-import com.bgsoftware.superiorskyblock.hooks.support.PlaceholderHook;
-import com.bgsoftware.superiorskyblock.island.permissions.IslandPrivileges;
-import com.bgsoftware.superiorskyblock.lang.Message;
-import com.bgsoftware.superiorskyblock.upgrade.SUpgradeLevel;
-import com.bgsoftware.superiorskyblock.utils.StringUtils;
-import com.bgsoftware.superiorskyblock.utils.events.EventResult;
-import com.bgsoftware.superiorskyblock.utils.events.EventsCaller;
-import com.bgsoftware.superiorskyblock.wrappers.SoundWrapper;
+import com.bgsoftware.superiorskyblock.commands.arguments.CommandArguments;
+import com.bgsoftware.superiorskyblock.core.GameSound;
+import com.bgsoftware.superiorskyblock.core.events.EventResult;
+import com.bgsoftware.superiorskyblock.core.events.EventsBus;
+import com.bgsoftware.superiorskyblock.core.formatting.Formatters;
+import com.bgsoftware.superiorskyblock.core.messages.Message;
+import com.bgsoftware.superiorskyblock.island.privilege.IslandPrivileges;
+import com.bgsoftware.superiorskyblock.island.upgrade.SUpgradeLevel;
 import org.bukkit.Bukkit;
 
-import java.util.ArrayList;
+import java.time.Duration;
 import java.util.Collections;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 
-public final class CmdRankup implements IPermissibleCommand {
+public class CmdRankup implements IPermissibleCommand {
 
     @Override
     public List<String> getAliases() {
@@ -95,8 +93,9 @@ public final class CmdRankup implements IPermissibleCommand {
         if (island.hasActiveUpgradeCooldown()) {
             long timeNow = System.currentTimeMillis();
             long lastUpgradeTime = island.getLastTimeUpgrade();
-            Message.UPGRADE_COOLDOWN_FORMAT.send(superiorPlayer, StringUtils.formatTime(superiorPlayer.getUserLocale(),
-                    lastUpgradeTime + plugin.getSettings().getUpgradeCooldown() - timeNow, TimeUnit.MILLISECONDS));
+            long duration = lastUpgradeTime + plugin.getSettings().getUpgradeCooldown() - timeNow;
+            Message.UPGRADE_COOLDOWN_FORMAT.send(superiorPlayer, Formatters.TIME_FORMATTER.format(
+                    Duration.ofMillis(duration), superiorPlayer.getUserLocale()));
             hasNextLevel = false;
         } else {
             String requiredCheckFailure = nextUpgradeLevel == null ? "" : nextUpgradeLevel.checkRequirements(superiorPlayer);
@@ -105,9 +104,10 @@ public final class CmdRankup implements IPermissibleCommand {
                 Message.CUSTOM.send(superiorPlayer, requiredCheckFailure, false);
                 hasNextLevel = false;
             } else {
-                EventResult<Pair<List<String>, UpgradeCost>> event = EventsCaller.callIslandUpgradeEvent(
-                        superiorPlayer, island, upgrade.getName(), upgradeLevel.getCommands(), upgradeLevel.getCost());
-                UpgradeCost upgradeCost = event.getResult().getValue();
+                EventResult<EventsBus.UpgradeResult> event = plugin.getEventsBus().callIslandUpgradeEvent(
+                        superiorPlayer, island, upgrade, upgradeLevel);
+
+                UpgradeCost upgradeCost = event.getResult().getUpgradeCost();
 
                 if (event.isCancelled()) {
                     hasNextLevel = false;
@@ -117,12 +117,15 @@ public final class CmdRankup implements IPermissibleCommand {
                     hasNextLevel = false;
 
                 } else {
+                    PlaceholdersService placeholdersService = plugin.getServices().getPlaceholdersService();
+
                     upgradeCost.withdrawCost(superiorPlayer);
 
-                    for (String command : event.getResult().getKey()) {
-                        Bukkit.dispatchCommand(Bukkit.getConsoleSender(), PlaceholderHook.parse(superiorPlayer, command
-                                .replace("%player%", superiorPlayer.getName())
-                                .replace("%leader%", island.getOwner().getName()))
+                    for (String command : event.getResult().getCommands()) {
+                        Bukkit.dispatchCommand(Bukkit.getConsoleSender(),
+                                placeholdersService.parsePlaceholders(superiorPlayer.asOfflinePlayer(), command
+                                        .replace("%player%", superiorPlayer.getName())
+                                        .replace("%leader%", island.getOwner().getName()))
                         );
                     }
 
@@ -132,7 +135,7 @@ public final class CmdRankup implements IPermissibleCommand {
         }
 
         SUpgradeLevel.ItemData itemData = ((SUpgradeLevel) upgradeLevel).getItemData();
-        SoundWrapper sound = hasNextLevel ? itemData.hasNextLevelSound : itemData.noNextLevelSound;
+        GameSound sound = hasNextLevel ? itemData.hasNextLevelSound : itemData.noNextLevelSound;
 
         if (sound != null)
             superiorPlayer.runIfOnline(sound::playSound);
@@ -140,7 +143,7 @@ public final class CmdRankup implements IPermissibleCommand {
 
     @Override
     public List<String> tabComplete(SuperiorSkyblockPlugin plugin, SuperiorPlayer superiorPlayer, Island island, String[] args) {
-        return args.length == 2 ? CommandTabCompletes.getUpgrades(plugin, args[1]) : new ArrayList<>();
+        return args.length == 2 ? CommandTabCompletes.getUpgrades(plugin, args[1]) : Collections.emptyList();
     }
 
 }

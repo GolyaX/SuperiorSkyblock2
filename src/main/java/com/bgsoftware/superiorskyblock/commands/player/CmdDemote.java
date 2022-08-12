@@ -1,21 +1,20 @@
 package com.bgsoftware.superiorskyblock.commands.player;
 
-import com.bgsoftware.superiorskyblock.lang.Message;
 import com.bgsoftware.superiorskyblock.SuperiorSkyblockPlugin;
 import com.bgsoftware.superiorskyblock.api.island.Island;
 import com.bgsoftware.superiorskyblock.api.island.IslandPrivilege;
 import com.bgsoftware.superiorskyblock.api.island.PlayerRole;
 import com.bgsoftware.superiorskyblock.api.wrappers.SuperiorPlayer;
-import com.bgsoftware.superiorskyblock.commands.CommandArguments;
 import com.bgsoftware.superiorskyblock.commands.CommandTabCompletes;
 import com.bgsoftware.superiorskyblock.commands.IPermissibleCommand;
-import com.bgsoftware.superiorskyblock.island.permissions.IslandPrivileges;
+import com.bgsoftware.superiorskyblock.commands.arguments.CommandArguments;
+import com.bgsoftware.superiorskyblock.core.messages.Message;
+import com.bgsoftware.superiorskyblock.island.privilege.IslandPrivileges;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-public final class CmdDemote implements IPermissibleCommand {
+public class CmdDemote implements IPermissibleCommand {
 
     @Override
     public List<String> getAliases() {
@@ -92,6 +91,9 @@ public final class CmdDemote implements IPermissibleCommand {
             return;
         }
 
+        if (!plugin.getEventsBus().callPlayerChangeRoleEvent(targetPlayer, previousRole))
+            return;
+
         targetPlayer.setPlayerRole(previousRole);
 
         Message.DEMOTED_MEMBER.send(superiorPlayer, targetPlayer.getName(), targetPlayer.getPlayerRole());
@@ -102,7 +104,7 @@ public final class CmdDemote implements IPermissibleCommand {
     public List<String> tabComplete(SuperiorSkyblockPlugin plugin, SuperiorPlayer superiorPlayer, Island island, String[] args) {
         return args.length == 2 ? CommandTabCompletes.getIslandMembers(island, args[1], islandMember ->
                 islandMember.getPlayerRole().isLessThan(superiorPlayer.getPlayerRole()) &&
-                        islandMember.getPlayerRole().getPreviousRole() != null) : new ArrayList<>();
+                        islandMember.getPlayerRole().getPreviousRole() != null) : Collections.emptyList();
     }
 
 }

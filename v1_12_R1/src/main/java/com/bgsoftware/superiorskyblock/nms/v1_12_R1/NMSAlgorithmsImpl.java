@@ -1,7 +1,8 @@
 package com.bgsoftware.superiorskyblock.nms.v1_12_R1;
 
 import com.bgsoftware.superiorskyblock.SuperiorSkyblockPlugin;
-import com.bgsoftware.superiorskyblock.key.Key;
+import com.bgsoftware.superiorskyblock.api.key.Key;
+import com.bgsoftware.superiorskyblock.core.key.KeyImpl;
 import com.bgsoftware.superiorskyblock.nms.NMSAlgorithms;
 import com.bgsoftware.superiorskyblock.nms.v1_12_R1.algorithms.GlowEnchantment;
 import net.minecraft.server.v1_12_R1.Block;
@@ -28,9 +29,18 @@ import org.bukkit.inventory.meta.PotionMeta;
 import org.bukkit.material.MaterialData;
 import org.bukkit.potion.PotionEffect;
 
-public final class NMSAlgorithmsImpl implements NMSAlgorithms {
+public class NMSAlgorithmsImpl implements NMSAlgorithms {
 
-    private static final SuperiorSkyblockPlugin plugin = SuperiorSkyblockPlugin.getPlugin();
+    private final SuperiorSkyblockPlugin plugin;
+
+    public NMSAlgorithmsImpl(SuperiorSkyblockPlugin plugin) {
+        this.plugin = plugin;
+    }
+
+    @Override
+    public boolean isMappingsSupported() {
+        return true;
+    }
 
     @Override
     public void registerCommand(BukkitCommand command) {
@@ -65,21 +75,21 @@ public final class NMSAlgorithmsImpl implements NMSAlgorithms {
         //noinspection deprecation
         Material material = Material.getMaterial(combinedId & 4095);
         byte data = (byte) (combinedId >> 12 & 15);
-        return Key.of(material, data);
+        return KeyImpl.of(material, data);
     }
 
     @Override
     public Key getMinecartBlock(Minecart minecart) {
         MaterialData materialData = minecart.getDisplayBlock();
         //noinspection deprecation
-        return Key.of(materialData.getItemType(), materialData.getData());
+        return KeyImpl.of(materialData.getItemType(), materialData.getData());
     }
 
 
     @Override
     public Key getFallingBlockType(FallingBlock fallingBlock) {
         //noinspection deprecation
-        return Key.of(fallingBlock.getMaterial(), fallingBlock.getBlockData());
+        return KeyImpl.of(fallingBlock.getMaterial(), fallingBlock.getBlockData());
     }
 
     @Override
@@ -106,7 +116,7 @@ public final class NMSAlgorithmsImpl implements NMSAlgorithms {
     }
 
     @Override
-    public Object getCustomHolder(InventoryType inventoryType, InventoryHolder defaultHolder, String title) {
+    public Object createMenuInventoryHolder(InventoryType inventoryType, InventoryHolder defaultHolder, String title) {
         return defaultHolder;
     }
 

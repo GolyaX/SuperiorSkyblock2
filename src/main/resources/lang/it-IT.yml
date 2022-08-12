@@ -43,6 +43,9 @@ BLOCK_LEVEL_WORTHLESS: '&e&lLivello | &7Il blocco {0} non ha valore.'
 BLOCK_VALUE: '&e&lWorth | &7Il blocco {0} vale {1}.'
 BLOCK_VALUE_WORTHLESS: '&e&lWorth | &7Il blocco {0} non ha valore.'
 BONUS_SET_SUCCESS: '&e&lIsola | &7Aggiornato con successo il bonus isola a {0}.'
+BONUS_SYNC_ALL: '&e&lIsland | &7Successfully synced the island bonus to all the islands'
+BONUS_SYNC_NAME: '&e&lIsland | &7Successfully synced the island bonus to {0}.'
+BONUS_SYNC: '&e&lIsland | &7Successfully synced the island bonus to {0}''s island.'
 BORDER_PLAYER_COLOR_NAME_BLUE: 'Blue'
 BORDER_PLAYER_COLOR_NAME_RED: 'Red'
 BORDER_PLAYER_COLOR_NAME_GREEN: 'Green'
@@ -106,6 +109,7 @@ COMMAND_ARGUMENT_ALL_ISLANDS: '*'
 COMMAND_ARGUMENT_ALL_PLAYERS: '*'
 COMMAND_ARGUMENT_AMOUNT: quantità
 COMMAND_ARGUMENT_BIOME: bioma
+COMMAND_ARGUMENT_BORDER_COLOR: 'border-color'
 COMMAND_ARGUMENT_COMMAND: 'command...'
 COMMAND_ARGUMENT_DISCORD: discord...
 COMMAND_ARGUMENT_EFFECT: effetto-pozione
@@ -218,6 +222,7 @@ COMMAND_DESCRIPTION_ADMIN_SHOW: Ottieni informazioni su un'isola.
 COMMAND_DESCRIPTION_ADMIN_SPAWN: Teletrasportati nella posizione di spawn.
 COMMAND_DESCRIPTION_ADMIN_SPY: Attiva/disattiva la modalità spia della chat
 COMMAND_DESCRIPTION_ADMIN_STATS: Mostra le statistiche riguardanti il plugin.
+COMMAND_DESCRIPTION_ADMIN_SYNC_BONUS: 'Sync the bonus of an island with the generated worlds.'
 COMMAND_DESCRIPTION_ADMIN_SYNC_UPGRADES: Sincronizza i valori di aggiornamento per un'isola.
 COMMAND_DESCRIPTION_ADMIN_TELEPORT: Teletrasporto nelle altre isole.
 COMMAND_DESCRIPTION_ADMIN_TITLE: Invia un titolo al giocatore
@@ -354,6 +359,7 @@ INTERACT_OUTSIDE_ISLAND: '&c&lErrore | &7Non puoi interagire al di fuori del tuo
 INVALID_AMOUNT: '&c&lErrore | &7Importo invalido {0}.'
 INVALID_BIOME: '&c&lErrore | &7Bioma invalido {0}.'
 INVALID_BLOCK: '&c&lErrore| &7Posizione del blocco invalida {0}.'
+INVALID_BORDER_COLOR: '&c&lError | &7Invalid border color {0}.'
 INVALID_EFFECT: '&c&lErrore| &7Effetto invalido {0}.'
 INVALID_ENTITY: '&c&lErrore | &7Entità invalida {0}.'
 INVALID_ENVIRONMENT: '&c&lErrore | &7Mondo invalido {0}.'
@@ -490,6 +496,7 @@ ISLAND_PREVIEW_START: |
   &e&lAnteprima | &7Scrivi &a&lCONFIRM &7per creare una nuova isola, oppure &c&lCANCEL &7per annullare la modalità di anteprima.
   &e&lAnteprima | &7Non è possibile lasciare l'area dell'isola, altrimenti la modalità anteprima verrà annullata automaticamente.
 ISLAND_PROTECTED: '&c&lErrore | &7Quest''isola è protetta.'
+ISLAND_PROTECTED_OPPED: '&7&oYou can bypass this restriction by using "/is admin bypass".'
 ISLAND_TEAM_STATUS_FOOTER: ''
 ISLAND_TEAM_STATUS_HEADER: '&e&lIsola | &7Membri dell''isola di {0} &8[&e{1}&8/&e{2}&8]&7:'
 ISLAND_TEAM_STATUS_OFFLINE: '&c(Disconnesso)'
@@ -600,6 +607,8 @@ PERMISSION_CHANGED_NAME: '&e&lIsola | &7Aggiornata correttamente l''autorizzazio
 PERMISSION_CHANGED_ALL: '&e&lIsola | &7Aggiornata correttamente l''autorizzazione {0} di tutte le isola.'
 PERMISSIONS_RESET_PLAYER: '&e&lIsola | &7Successfully reset all the permissions for {0} to default values!'
 PERMISSIONS_RESET_ROLES: '&e&lIsola | &7Successfully reset all the permissions of the island to default values!'
+PLACEHOLDER_NO: 'No'
+PLACEHOLDER_YES: 'Yes'
 PLAYER_ALREADY_BANNED: '&c&lErrore | &7Questo giocatore è già stato bannato.'
 PLAYER_ALREADY_COOP: '&c&lErrore | &7Questo giocatore è già un membro coop.'
 PLAYER_ALREADY_IN_ISLAND: '&c&lErrore | &7Questo giocatore è già all''interno di un''isola.'
@@ -696,6 +705,7 @@ TRANSFER_ALREADY_LEADER: '&c&lErrore | &7Sei già il capo di quest''isola.'
 TRANSFER_BROADCAST: '&e&lIsola | &7La leadership dell''isola è stata trasferita a {0}.'
 UNBAN_ANNOUNCEMENT: '&e&lIsola | &7{0} è stato sbannato dall''isola da {1}.'
 UNCOOP_ANNOUNCEMENT: '&e&lIsola | &7{0} ha rimosso {1} dall''essere un membro coop.'
+UNCOOP_AUTO_ANNOUNCEMENT: '&e&lIsland | &7There are no island members online and therefore you were un-cooped automatically.'
 UNCOOP_LEFT_ANNOUNCEMENT: '&e&lIsola | &7{0} è uscito dal server, non è più un membro coop.'
 UNIGNORED_ISLAND: '&e&lIsola | &7L''isola di {0} ora NON È PIÙ IGNORATA dalle isole migliori(/is top).'
 UNIGNORED_ISLAND_NAME: '&e&lIsola | &7L''isola {0} ora NON È PIÙ IGNORATA dalle isole migliori(/is top).'
@@ -712,7 +722,7 @@ WARP_CATEGORY_ICON_NEW_LORE: |
 WARP_CATEGORY_ICON_NEW_NAME: '&e&lWarps | &7Enter a name (Type "-cancel" to cancel):'
 WARP_CATEGORY_ICON_NEW_TYPE: '&e&lWarps | &7Enter a new material type (Type "-cancel" to cancel):'
 WARP_CATEGORY_ICON_UPDATED: '&e&lWarps | &7Successfully updated the category''s icon.'
-WARP_CATEGORY_ILLEGAL_NAME: '&c&lError | &7You can only use alphabetical letters, numbers and ''_'' for warp category names.'
+WARP_CATEGORY_ILLEGAL_NAME: '&c&lError | &7Warp category names cannot be empty.'
 WARP_CATEGORY_NAME_TOO_LONG: '&c&lError | Warp category names cannot be longer than 255 chars.'
 WARP_CATEGORY_SLOT: '&e&lWarps | &7Enter a new slot (Type "-cancel" to cancel):'
 WARP_CATEGORY_SLOT_ALREADY_TAKEN: '&c&lError | &7This slot is already taken by another category.'
@@ -726,7 +736,7 @@ WARP_ICON_NEW_LORE: |
 WARP_ICON_NEW_NAME: '&e&lWarps | &7Enter a name (Type "-cancel" to cancel):'
 WARP_ICON_NEW_TYPE: '&e&lWarps | &7Enter a new material type (Type "-cancel" to cancel):'
 WARP_ICON_UPDATED: '&e&lWarps | &7Successfully updated the warp''s icon.'
-WARP_ILLEGAL_NAME: '&c&lError | &7You can only use alphabetical letters, numbers and ''_'' for warp names.'
+WARP_ILLEGAL_NAME: '&c&lError | &7Warp names cannot be empty.'
 WARP_LOCATION_UPDATE: '&e&lWarps | &7Successfully updated the warp''s location to your location.'
 WARP_NAME_TOO_LONG: '&c&lError | Warp names cannot be longer than 255 chars.'
 WARP_PUBLIC_UPDATE: '&e&lWarps | &7Successfully opened the warp to the public.'
@@ -741,4 +751,5 @@ WITHDRAW_ANNOUNCEMENT: '&e&lBanca | &7{0} ha prelevato ${1} dalla banca dell''is
 WITHDRAW_ERROR: '&c&lErrore | &7{0}.'
 WITHDRAWN_MONEY: '&e&lBanca | &7Hai ritirato ${0} dalla banca dell''isola di {1}!'
 WITHDRAWN_MONEY_NAME: '&e&lBanca | &7Hai ritirato ${0} dalla riva dell''isola {1}!'
+WORLD_NOT_ENABLED: '&e&lWorlds | &7This world is not enabled on the server.'
 WORLD_NOT_UNLOCKED: '&e&lMondi | &7Il mondo {0} non è ancora stato sbloccato!'

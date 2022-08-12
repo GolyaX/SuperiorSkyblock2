@@ -17,7 +17,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
 
-public final class CropsTickingTileEntity extends TileEntity implements IUpdatePlayerListBox {
+public class CropsTickingTileEntity extends TileEntity implements IUpdatePlayerListBox {
 
     private static final SuperiorSkyblockPlugin plugin = SuperiorSkyblockPlugin.getPlugin();
 

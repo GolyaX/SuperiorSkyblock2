@@ -1,29 +1,35 @@
 package com.bgsoftware.superiorskyblock.mission;
 
 import com.bgsoftware.superiorskyblock.api.missions.Mission;
-import com.bgsoftware.superiorskyblock.utils.FileUtils;
-import com.bgsoftware.superiorskyblock.utils.items.ItemBuilder;
+import com.bgsoftware.superiorskyblock.core.io.MenuParser;
+import com.bgsoftware.superiorskyblock.core.itemstack.ItemBuilder;
+import com.bgsoftware.superiorskyblock.core.menu.TemplateItem;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.inventory.ItemStack;
+import org.jetbrains.annotations.Nullable;
 
-import java.util.ArrayList;
+import java.util.Collections;
+import java.util.LinkedList;
 import java.util.List;
 
-public final class MissionData {
+public class MissionData {
 
     private static int currentIndex = 0;
 
     private final int index;
     private final Mission<?> mission;
-    private final List<ItemStack> itemRewards = new ArrayList<>();
-    private final List<String> commandRewards = new ArrayList<>();
+    private final List<ItemStack> itemRewards = new LinkedList<>();
+    private final List<String> commandRewards = new LinkedList<>();
     private final boolean autoReward;
     private final boolean islandMission;
     private final boolean disbandReset;
     private final boolean leaveReset;
-    private final ItemBuilder notCompleted;
-    private final ItemBuilder canComplete;
-    private final ItemBuilder completed;
+    @Nullable
+    private final TemplateItem notCompleted;
+    @Nullable
+    private final TemplateItem canComplete;
+    @Nullable
+    private final TemplateItem completed;
     private final int resetAmount;
 
     MissionData(Mission<?> mission, ConfigurationSection section) {
@@ -37,17 +43,20 @@ public final class MissionData {
 
         if (section.contains("rewards.items")) {
             for (String key : section.getConfigurationSection("rewards.items").getKeys(false)) {
-                ItemStack itemStack = FileUtils.getItemStack("config.yml", section.getConfigurationSection("rewards.items." + key)).build();
-                itemStack.setAmount(section.getInt("rewards.items." + key + ".amount", 1));
-                this.itemRewards.add(itemStack);
+                TemplateItem templateItem = MenuParser.getItemStack("config.yml", section.getConfigurationSection("rewards.items." + key));
+                if (templateItem != null) {
+                    ItemStack itemStack = templateItem.build();
+                    itemStack.setAmount(section.getInt("rewards.items." + key + ".amount", 1));
+                    this.itemRewards.add(itemStack);
+                }
             }
         }
 
         this.commandRewards.addAll(section.getStringList("rewards.commands"));
 
-        this.notCompleted = FileUtils.getItemStack("config.yml", section.getConfigurationSection("icons.not-completed"));
-        this.canComplete = FileUtils.getItemStack("config.yml", section.getConfigurationSection("icons.can-complete"));
-        this.completed = FileUtils.getItemStack("config.yml", section.getConfigurationSection("icons.completed"));
+        this.notCompleted = MenuParser.getItemStack("config.yml", section.getConfigurationSection("icons.not-completed"));
+        this.canComplete = MenuParser.getItemStack("config.yml", section.getConfigurationSection("icons.can-complete"));
+        this.completed = MenuParser.getItemStack("config.yml", section.getConfigurationSection("icons.completed"));
     }
 
     public boolean isAutoReward() {
@@ -59,11 +68,11 @@ public final class MissionData {
     }
 
     public List<ItemStack> getItemRewards() {
-        return itemRewards;
+        return Collections.unmodifiableList(itemRewards);
     }
 
     public List<String> getCommandRewards() {
-        return commandRewards;
+        return Collections.unmodifiableList(commandRewards);
     }
 
     public int getIndex() {
@@ -87,15 +96,15 @@ public final class MissionData {
     }
 
     public ItemBuilder getCompleted() {
-        return completed.copy();
+        return (completed == null ? TemplateItem.AIR : completed).getBuilder();
     }
 
     public ItemBuilder getCanComplete() {
-        return canComplete.copy();
+        return (canComplete == null ? TemplateItem.AIR : canComplete).getBuilder();
     }
 
     public ItemBuilder getNotCompleted() {
-        return notCompleted.copy();
+        return (notCompleted == null ? TemplateItem.AIR : notCompleted).getBuilder();
     }
 
     @Override

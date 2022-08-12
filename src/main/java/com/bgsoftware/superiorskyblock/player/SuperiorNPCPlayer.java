@@ -1,19 +1,18 @@
 package com.bgsoftware.superiorskyblock.player;
 
 import com.bgsoftware.superiorskyblock.api.data.DatabaseBridge;
-import com.bgsoftware.superiorskyblock.api.data.PlayerDataHandler;
 import com.bgsoftware.superiorskyblock.api.enums.BorderColor;
 import com.bgsoftware.superiorskyblock.api.enums.HitActionResult;
 import com.bgsoftware.superiorskyblock.api.island.Island;
 import com.bgsoftware.superiorskyblock.api.island.IslandPrivilege;
 import com.bgsoftware.superiorskyblock.api.island.PlayerRole;
 import com.bgsoftware.superiorskyblock.api.missions.Mission;
+import com.bgsoftware.superiorskyblock.api.persistence.PersistentDataContainer;
 import com.bgsoftware.superiorskyblock.api.wrappers.BlockPosition;
 import com.bgsoftware.superiorskyblock.api.wrappers.SuperiorPlayer;
-import com.bgsoftware.superiorskyblock.database.EmptyDataHandler;
-import com.bgsoftware.superiorskyblock.database.bridge.EmptyDatabaseBridge;
-import com.bgsoftware.superiorskyblock.island.SPlayerRole;
-import com.bgsoftware.superiorskyblock.lang.PlayerLocales;
+import com.bgsoftware.superiorskyblock.core.database.bridge.EmptyDatabaseBridge;
+import com.bgsoftware.superiorskyblock.core.persistence.EmptyPersistentDataContainer;
+import com.bgsoftware.superiorskyblock.island.role.SPlayerRole;
 import org.bukkit.Location;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.World;
@@ -24,16 +23,14 @@ import org.bukkit.scheduler.BukkitTask;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
-import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
 import java.util.function.Consumer;
 
-public final class SuperiorNPCPlayer implements SuperiorPlayer {
+public class SuperiorNPCPlayer implements SuperiorPlayer {
 
     private final Entity npc;
 
@@ -67,12 +64,22 @@ public final class SuperiorNPCPlayer implements SuperiorPlayer {
     }
 
     @Override
+    public void setLastTimeStatus(long lastTimeStatus) {
+        // Do nothing.
+    }
+
+    @Override
     public long getLastTimeStatus() {
         return System.currentTimeMillis() / 1000;
     }
 
     @Override
     public void updateName() {
+        // Do nothing.
+    }
+
+    @Override
+    public void setName(String name) {
         // Do nothing.
     }
 
@@ -159,11 +166,22 @@ public final class SuperiorNPCPlayer implements SuperiorPlayer {
 
     @Override
     public void teleport(Island island) {
-        teleport(island, null);
+        this.teleport(island, (Consumer<Boolean>) null);
+    }
+
+    @Override
+    public void teleport(Island island, World.Environment environment) {
+        this.teleport(island, environment, null);
     }
 
     @Override
     public void teleport(Island island, @Nullable Consumer<Boolean> teleportResult) {
+        if (teleportResult != null)
+            teleportResult.accept(false);
+    }
+
+    @Override
+    public void teleport(Island island, World.Environment environment, @Nullable Consumer<Boolean> teleportResult) {
         if (teleportResult != null)
             teleportResult.accept(false);
     }
@@ -244,6 +262,11 @@ public final class SuperiorNPCPlayer implements SuperiorPlayer {
     }
 
     @Override
+    public void setWorldBorderEnabled(boolean enabled) {
+        // Do nothing.
+    }
+
+    @Override
     public void updateWorldBorder(@Nullable Island island) {
         // Do nothing.
     }
@@ -259,12 +282,22 @@ public final class SuperiorNPCPlayer implements SuperiorPlayer {
     }
 
     @Override
+    public void setBlocksStacker(boolean enabled) {
+        // Do nothing.
+    }
+
+    @Override
     public boolean hasSchematicModeEnabled() {
         return false;
     }
 
     @Override
     public void toggleSchematicMode() {
+        // Do nothing.
+    }
+
+    @Override
+    public void setSchematicMode(boolean enabled) {
         // Do nothing.
     }
 
@@ -279,12 +312,22 @@ public final class SuperiorNPCPlayer implements SuperiorPlayer {
     }
 
     @Override
+    public void setTeamChat(boolean enabled) {
+        // Do nothing.
+    }
+
+    @Override
     public boolean hasBypassModeEnabled() {
         return false;
     }
 
     @Override
     public void toggleBypassMode() {
+        // Do nothing.
+    }
+
+    @Override
+    public void setBypassMode(boolean enabled) {
         // Do nothing.
     }
 
@@ -309,12 +352,22 @@ public final class SuperiorNPCPlayer implements SuperiorPlayer {
     }
 
     @Override
+    public void setIslandFly(boolean enabled) {
+        // Do nothing.
+    }
+
+    @Override
     public boolean hasAdminSpyEnabled() {
         return false;
     }
 
     @Override
     public void toggleAdminSpy() {
+        // Do nothing.
+    }
+
+    @Override
+    public void setAdminSpy(boolean enabled) {
         // Do nothing.
     }
 
@@ -395,14 +448,13 @@ public final class SuperiorNPCPlayer implements SuperiorPlayer {
     }
 
     @Override
-    @Deprecated
-    public PlayerDataHandler getDataHandler() {
-        return EmptyDataHandler.getInstance();
+    public DatabaseBridge getDatabaseBridge() {
+        return EmptyDatabaseBridge.getInstance();
     }
 
     @Override
-    public DatabaseBridge getDatabaseBridge() {
-        return EmptyDatabaseBridge.getInstance();
+    public PersistentDataContainer getPersistentDataContainer() {
+        return EmptyPersistentDataContainer.getInstance();
     }
 
     @Override
@@ -431,6 +483,11 @@ public final class SuperiorNPCPlayer implements SuperiorPlayer {
     }
 
     @Override
+    public void setAmountMissionCompleted(Mission<?> mission, int finishCount) {
+        // Do nothing.
+    }
+
+    @Override
     public List<Mission<?>> getCompletedMissions() {
         return Collections.emptyList();
     }
@@ -439,5 +496,4 @@ public final class SuperiorNPCPlayer implements SuperiorPlayer {
     public Map<Mission<?>, Integer> getCompletedMissionsWithAmounts() {
         return Collections.emptyMap();
     }
-
 }

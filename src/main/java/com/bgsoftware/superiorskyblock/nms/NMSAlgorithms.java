@@ -1,6 +1,6 @@
 package com.bgsoftware.superiorskyblock.nms;
 
-import com.bgsoftware.superiorskyblock.key.Key;
+import com.bgsoftware.superiorskyblock.api.key.Key;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.command.defaults.BukkitCommand;
@@ -14,7 +14,11 @@ import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.inventory.meta.PotionMeta;
 import org.bukkit.potion.PotionEffect;
 
+import javax.annotation.Nullable;
+
 public interface NMSAlgorithms {
+
+    boolean isMappingsSupported();
 
     void registerCommand(BukkitCommand command);
 
@@ -40,6 +44,7 @@ public interface NMSAlgorithms {
 
     Enchantment getGlowEnchant();
 
-    Object getCustomHolder(InventoryType inventoryType, InventoryHolder defaultHolder, String title);
+    @Nullable
+    Object createMenuInventoryHolder(InventoryType inventoryType, InventoryHolder defaultHolder, String title);
 
 }

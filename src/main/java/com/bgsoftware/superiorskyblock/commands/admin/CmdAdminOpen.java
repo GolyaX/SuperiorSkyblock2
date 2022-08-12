@@ -1,6 +1,6 @@
 package com.bgsoftware.superiorskyblock.commands.admin;
 
-import com.bgsoftware.superiorskyblock.lang.Message;
+import com.bgsoftware.superiorskyblock.core.messages.Message;
 import com.bgsoftware.superiorskyblock.SuperiorSkyblockPlugin;
 import com.bgsoftware.superiorskyblock.api.island.Island;
 import com.bgsoftware.superiorskyblock.api.wrappers.SuperiorPlayer;
@@ -10,7 +10,7 @@ import org.bukkit.command.CommandSender;
 import java.util.Arrays;
 import java.util.List;
 
-public final class CmdAdminOpen implements IAdminIslandCommand {
+public class CmdAdminOpen implements IAdminIslandCommand {
 
     @Override
     public List<String> getAliases() {
@@ -56,8 +56,10 @@ public final class CmdAdminOpen implements IAdminIslandCommand {
 
     @Override
     public void execute(SuperiorSkyblockPlugin plugin, CommandSender sender, SuperiorPlayer targetPlayer, Island island, String[] args) {
-        island.setLocked(false);
-        Message.ISLAND_OPENED.send(sender);
+        if (plugin.getEventsBus().callIslandOpenEvent(island, sender)) {
+            island.setLocked(false);
+            Message.ISLAND_OPENED.send(sender);
+        }
     }
 
 }

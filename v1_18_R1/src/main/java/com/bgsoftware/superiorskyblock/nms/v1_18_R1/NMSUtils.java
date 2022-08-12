@@ -3,27 +3,29 @@ package com.bgsoftware.superiorskyblock.nms.v1_18_R1;
 import com.bgsoftware.common.reflection.ReflectMethod;
 import com.bgsoftware.superiorskyblock.SuperiorSkyblockPlugin;
 import com.bgsoftware.superiorskyblock.api.objects.Pair;
-import com.bgsoftware.superiorskyblock.nms.v1_18_R1.mapping.BlockPosition;
-import com.bgsoftware.superiorskyblock.nms.v1_18_R1.mapping.ChunkCoordIntPair;
-import com.bgsoftware.superiorskyblock.nms.v1_18_R1.mapping.SectionPosition;
-import com.bgsoftware.superiorskyblock.nms.v1_18_R1.mapping.level.PlayerChunkMap;
-import com.bgsoftware.superiorskyblock.nms.v1_18_R1.mapping.level.WorldServer;
-import com.bgsoftware.superiorskyblock.nms.v1_18_R1.mapping.level.block.Block;
-import com.bgsoftware.superiorskyblock.nms.v1_18_R1.mapping.level.block.entity.TileEntity;
-import com.bgsoftware.superiorskyblock.nms.v1_18_R1.mapping.level.block.state.BlockData;
-import com.bgsoftware.superiorskyblock.nms.v1_18_R1.mapping.level.block.state.properties.BlockState;
-import com.bgsoftware.superiorskyblock.nms.v1_18_R1.mapping.level.chunk.ChunkAccess;
-import com.bgsoftware.superiorskyblock.nms.v1_18_R1.mapping.level.chunk.ChunkSection;
-import com.bgsoftware.superiorskyblock.nms.v1_18_R1.mapping.nbt.NBTTagCompound;
-import com.bgsoftware.superiorskyblock.nms.v1_18_R1.mapping.nbt.NBTTagList;
+import com.bgsoftware.superiorskyblock.core.SequentialListBuilder;
+import com.bgsoftware.superiorskyblock.core.debug.PluginDebugger;
+import com.bgsoftware.superiorskyblock.core.threads.BukkitExecutor;
+import com.bgsoftware.superiorskyblock.nms.mapping.Remap;
+import com.bgsoftware.superiorskyblock.nms.v1_18_R1.mapping.net.minecraft.core.BlockPosition;
+import com.bgsoftware.superiorskyblock.nms.v1_18_R1.mapping.net.minecraft.core.SectionPosition;
+import com.bgsoftware.superiorskyblock.nms.v1_18_R1.mapping.net.minecraft.nbt.NBTTagCompound;
+import com.bgsoftware.superiorskyblock.nms.v1_18_R1.mapping.net.minecraft.nbt.NBTTagList;
+import com.bgsoftware.superiorskyblock.nms.v1_18_R1.mapping.net.minecraft.server.level.PlayerChunkMap;
+import com.bgsoftware.superiorskyblock.nms.v1_18_R1.mapping.net.minecraft.server.level.WorldServer;
+import com.bgsoftware.superiorskyblock.nms.v1_18_R1.mapping.net.minecraft.world.level.ChunkCoordIntPair;
+import com.bgsoftware.superiorskyblock.nms.v1_18_R1.mapping.net.minecraft.world.level.block.Block;
+import com.bgsoftware.superiorskyblock.nms.v1_18_R1.mapping.net.minecraft.world.level.block.entity.TileEntity;
+import com.bgsoftware.superiorskyblock.nms.v1_18_R1.mapping.net.minecraft.world.level.block.state.BlockData;
+import com.bgsoftware.superiorskyblock.nms.v1_18_R1.mapping.net.minecraft.world.level.block.state.properties.BlockState;
+import com.bgsoftware.superiorskyblock.nms.v1_18_R1.mapping.net.minecraft.world.level.chunk.ChunkAccess;
+import com.bgsoftware.superiorskyblock.nms.v1_18_R1.mapping.net.minecraft.world.level.chunk.ChunkSection;
 import com.bgsoftware.superiorskyblock.nms.v1_18_R1.world.BlockStatesMapper;
 import com.bgsoftware.superiorskyblock.tag.ByteTag;
 import com.bgsoftware.superiorskyblock.tag.CompoundTag;
 import com.bgsoftware.superiorskyblock.tag.IntArrayTag;
 import com.bgsoftware.superiorskyblock.tag.StringTag;
 import com.bgsoftware.superiorskyblock.tag.Tag;
-import com.bgsoftware.superiorskyblock.threads.Executor;
-import com.bgsoftware.superiorskyblock.utils.debug.PluginDebugger;
 import com.google.common.base.Suppliers;
 import net.minecraft.network.protocol.Packet;
 import net.minecraft.server.level.PlayerChunk;
@@ -36,9 +38,9 @@ import org.bukkit.World;
 import org.bukkit.block.Biome;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.EnumMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -52,23 +54,28 @@ public final class NMSUtils {
 
     private static final ReflectMethod<Void> SEND_PACKETS_TO_RELEVANT_PLAYERS = new ReflectMethod<>(
             PlayerChunk.class, 1, Packet.class, boolean.class);
+    @Remap(classPath = "net.minecraft.world.level.levelgen.Heightmap$Types", name = "MOTION_BLOCKING", type = Remap.Type.FIELD, remappedName = "e")
+    private static final HeightMap.Type MOTION_BLOCKING_HEIGHT_MAP = HeightMap.Type.e;
+    @Remap(classPath = "net.minecraft.world.level.levelgen.Heightmap$Types", name = "MOTION_BLOCKING_NO_LEAVES", type = Remap.Type.FIELD, remappedName = "f")
+    private static final HeightMap.Type MOTION_BLOCKING_NO_LEAVES_HEIGHT_MAP = HeightMap.Type.f;
+    @Remap(classPath = "net.minecraft.world.level.levelgen.Heightmap$Types", name = "OCEAN_FLOOR", type = Remap.Type.FIELD, remappedName = "d")
+    private static final HeightMap.Type OCEAN_FLOOR_HEIGHT_MAP = HeightMap.Type.d;
+    @Remap(classPath = "net.minecraft.world.level.levelgen.Heightmap$Types", name = "WORLD_SURFACE", type = Remap.Type.FIELD, remappedName = "b")
+    private static final HeightMap.Type WORLD_SURFACE_HEIGHT_MAP = HeightMap.Type.b;
 
     static {
         try {
-            biomeEnumMap.put(World.Environment.NORMAL, Biome.valueOf(plugin.getSettings().getWorlds()
-                    .getNormal().getBiome().toUpperCase()));
+            biomeEnumMap.put(World.Environment.NORMAL, Biome.valueOf(plugin.getSettings().getWorlds().getNormal().getBiome()));
         } catch (IllegalArgumentException error) {
             biomeEnumMap.put(World.Environment.NORMAL, Biome.PLAINS);
         }
         try {
-            biomeEnumMap.put(World.Environment.NETHER, Biome.valueOf(plugin.getSettings().getWorlds()
-                    .getNether().getBiome().toUpperCase()));
+            biomeEnumMap.put(World.Environment.NETHER, Biome.valueOf(plugin.getSettings().getWorlds().getNether().getBiome()));
         } catch (IllegalArgumentException error) {
             biomeEnumMap.put(World.Environment.NETHER, Biome.NETHER_WASTES);
         }
         try {
-            biomeEnumMap.put(World.Environment.THE_END, Biome.valueOf(plugin.getSettings().getWorlds()
-                    .getEnd().getBiome().toUpperCase()));
+            biomeEnumMap.put(World.Environment.THE_END, Biome.valueOf(plugin.getSettings().getWorlds().getEnd().getBiome()));
         } catch (IllegalArgumentException error) {
             biomeEnumMap.put(World.Environment.THE_END, Biome.THE_END);
         }
@@ -81,8 +88,8 @@ public final class NMSUtils {
     public static void runActionOnChunks(WorldServer worldServer, Collection<ChunkCoordIntPair> chunksCoords,
                                          boolean saveChunks, Runnable onFinish, Consumer<ChunkAccess> chunkConsumer,
                                          Consumer<UnloadedChunkCompound> unloadedChunkConsumer) {
-        List<ChunkCoordIntPair> unloadedChunks = new ArrayList<>();
-        List<ChunkAccess> loadedChunks = new ArrayList<>();
+        List<ChunkCoordIntPair> unloadedChunks = new LinkedList<>();
+        List<ChunkAccess> loadedChunks = new LinkedList<>();
 
         chunksCoords.forEach(chunkCoords -> {
             ChunkAccess chunkAccess = worldServer.getChunkIfLoaded(chunkCoords.getX(), chunkCoords.getZ());
@@ -116,27 +123,25 @@ public final class NMSUtils {
                                                  Runnable onFinish) {
         PlayerChunkMap playerChunkMap = worldServer.getChunkProvider().getPlayerChunkMap();
 
-        Executor.createTask().runAsync(v -> {
-            List<Pair<ChunkCoordIntPair, NBTTagCompound>> chunkCompounds = new ArrayList<>();
+        BukkitExecutor.createTask().runAsync(v -> {
+            List<Pair<ChunkCoordIntPair, NBTTagCompound>> chunkCompounds = new LinkedList<>();
 
             chunks.forEach(chunkCoords -> {
                 try {
-                    NBTTagCompound chunkCompound = playerChunkMap.read(chunkCoords);
+                    NBTTagCompound chunkCompound = playerChunkMap.read(chunkCoords).join();
 
-                    if (chunkCompound == null) {
-                        ChunkAccess protoChunk = createProtoChunk(chunkCoords, worldServer);
-                        chunkCompound = worldServer.saveChunk(protoChunk);
-                    } else {
-                        chunkCompound = playerChunkMap.getChunkData(worldServer.getTypeKey(),
-                                Suppliers.ofInstance(worldServer.getWorldPersistentData()), chunkCompound,
-                                chunkCoords, worldServer.getHandle());
-                    }
+                    if (chunkCompound == null)
+                        return;
 
-                    UnloadedChunkCompound unloadedChunkCompound = new UnloadedChunkCompound(chunkCompound, chunkCoords);
+                    NBTTagCompound chunkDataCompound = playerChunkMap.getChunkData(worldServer.getTypeKey(),
+                            Suppliers.ofInstance(worldServer.getWorldPersistentData()), chunkCompound,
+                            chunkCoords, worldServer.getHandle());
+
+                    UnloadedChunkCompound unloadedChunkCompound = new UnloadedChunkCompound(chunkDataCompound, chunkCoords);
                     chunkConsumer.accept(unloadedChunkCompound);
 
                     if (saveChunks)
-                        chunkCompounds.add(new Pair<>(chunkCoords, chunkCompound));
+                        chunkCompounds.add(new Pair<>(chunkCoords, chunkDataCompound));
                 } catch (Exception ex) {
                     ex.printStackTrace();
                     PluginDebugger.debug(ex);
@@ -178,10 +183,13 @@ public final class NMSUtils {
 
     public static void setBlock(ChunkAccess chunk, BlockPosition blockPosition,
                                 int combinedId, CompoundTag statesTag, CompoundTag tileEntity) {
+        if (!isValidPosition(chunk.getWorld(), blockPosition))
+            return;
+
         BlockData blockData = Block.getByCombinedId(combinedId);
 
         if (statesTag != null) {
-            for (Map.Entry<String, Tag<?>> entry : statesTag.getValue().entrySet()) {
+            for (Map.Entry<String, Tag<?>> entry : statesTag.entrySet()) {
                 try {
                     // noinspection rawtypes
                     BlockState blockState = BlockStatesMapper.getBlockState(entry.getKey());
@@ -233,10 +241,10 @@ public final class NMSUtils {
 
         chunkSection.setType(blockX, blockY & 15, blockZ, blockData, false);
 
-        chunk.getHeightmap(HeightMap.Type.e).setBlock(blockX, blockY, blockZ, blockData);
-        chunk.getHeightmap(HeightMap.Type.f).setBlock(blockX, blockY, blockZ, blockData);
-        chunk.getHeightmap(HeightMap.Type.d).setBlock(blockX, blockY, blockZ, blockData);
-        chunk.getHeightmap(HeightMap.Type.b).setBlock(blockX, blockY, blockZ, blockData);
+        chunk.getHeightmap(MOTION_BLOCKING_HEIGHT_MAP).setBlock(blockX, blockY, blockZ, blockData);
+        chunk.getHeightmap(MOTION_BLOCKING_NO_LEAVES_HEIGHT_MAP).setBlock(blockX, blockY, blockZ, blockData);
+        chunk.getHeightmap(OCEAN_FLOOR_HEIGHT_MAP).setBlock(blockX, blockY, blockZ, blockData);
+        chunk.getHeightmap(WORLD_SURFACE_HEIGHT_MAP).setBlock(blockX, blockY, blockZ, blockData);
 
         chunk.setNeedsSaving(true);
 
@@ -265,7 +273,7 @@ public final class NMSUtils {
     }
 
     public static List<Biome> getAllBiomes() {
-        return new ArrayList<>(biomeEnumMap.values());
+        return new SequentialListBuilder<Biome>().build(biomeEnumMap.values());
     }
 
     public record UnloadedChunkCompound(NBTTagCompound chunkCompound, ChunkCoordIntPair chunkCoords) {
@@ -290,6 +298,12 @@ public final class NMSUtils {
             return chunkCoords;
         }
 
+    }
+
+    private static boolean isValidPosition(WorldServer world, BlockPosition blockPosition) {
+        return blockPosition.getX() >= -30000000 && blockPosition.getZ() >= -30000000 &&
+                blockPosition.getX() < 30000000 && blockPosition.getZ() < 30000000 &&
+                blockPosition.getY() >= world.getWorld().getMinHeight() && blockPosition.getY() < world.getWorld().getMaxHeight();
     }
 
 }

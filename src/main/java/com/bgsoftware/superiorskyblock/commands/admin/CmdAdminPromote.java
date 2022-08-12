@@ -1,6 +1,6 @@
 package com.bgsoftware.superiorskyblock.commands.admin;
 
-import com.bgsoftware.superiorskyblock.lang.Message;
+import com.bgsoftware.superiorskyblock.core.messages.Message;
 import com.bgsoftware.superiorskyblock.SuperiorSkyblockPlugin;
 import com.bgsoftware.superiorskyblock.api.island.Island;
 import com.bgsoftware.superiorskyblock.api.island.PlayerRole;
@@ -11,7 +11,7 @@ import org.bukkit.command.CommandSender;
 import java.util.Collections;
 import java.util.List;
 
-public final class CmdAdminPromote implements IAdminPlayerCommand {
+public class CmdAdminPromote implements IAdminPlayerCommand {
 
     @Override
     public List<String> getAliases() {
@@ -88,6 +88,9 @@ public final class CmdAdminPromote implements IAdminPlayerCommand {
             Message.LAST_ROLE_PROMOTE.send(sender);
             return;
         }
+
+        if (!plugin.getEventsBus().callPlayerChangeRoleEvent(targetPlayer, nextRole))
+            return;
 
         targetPlayer.setPlayerRole(nextRole);
 

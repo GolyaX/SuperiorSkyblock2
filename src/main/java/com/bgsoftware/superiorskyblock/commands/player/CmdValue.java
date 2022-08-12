@@ -1,23 +1,23 @@
 package com.bgsoftware.superiorskyblock.commands.player;
 
 import com.bgsoftware.superiorskyblock.SuperiorSkyblockPlugin;
+import com.bgsoftware.superiorskyblock.api.key.Key;
 import com.bgsoftware.superiorskyblock.api.wrappers.SuperiorPlayer;
+import com.bgsoftware.superiorskyblock.core.messages.Message;
 import com.bgsoftware.superiorskyblock.commands.ISuperiorCommand;
-import com.bgsoftware.superiorskyblock.key.Key;
-import com.bgsoftware.superiorskyblock.lang.Message;
-import com.bgsoftware.superiorskyblock.utils.StringUtils;
-import com.bgsoftware.superiorskyblock.utils.legacy.Materials;
+import com.bgsoftware.superiorskyblock.core.formatting.Formatters;
+import com.bgsoftware.superiorskyblock.core.key.KeyImpl;
+import com.bgsoftware.superiorskyblock.core.Materials;
 import org.bukkit.Material;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 
 import java.math.BigDecimal;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-public final class CmdValue implements ISuperiorCommand {
+public class CmdValue implements ISuperiorCommand {
 
     @Override
     public List<String> getAliases() {
@@ -68,16 +68,16 @@ public final class CmdValue implements ISuperiorCommand {
                 inHand = new ItemStack(Material.AIR);
             }
 
-            toCheck = Key.of(inHand);
+            toCheck = KeyImpl.of(inHand);
 
             if (inHand.getType() == Materials.SPAWNER.toBukkitType())
-                keyName = StringUtils.format(toCheck.getSubKey() + "_Spawner");
+                keyName = Formatters.CAPITALIZED_FORMATTER.format(toCheck.getSubKey() + "_Spawner");
         } else {
-            toCheck = Key.of(args[1].toUpperCase());
+            toCheck = KeyImpl.of(args[1]);
         }
 
         if (keyName.isEmpty())
-            keyName = StringUtils.format(toCheck.getGlobalKey());
+            keyName = Formatters.CAPITALIZED_FORMATTER.format(toCheck.getGlobalKey());
 
         java.util.Locale locale = superiorPlayer.getUserLocale();
 
@@ -90,7 +90,8 @@ public final class CmdValue implements ISuperiorCommand {
                     stringBuilder.append(Message.BLOCK_VALUE_WORTHLESS.getMessage(locale, keyName)).append("\n");
             } else {
                 if (!Message.BLOCK_VALUE.isEmpty(locale))
-                    stringBuilder.append(Message.BLOCK_VALUE.getMessage(locale, keyName, StringUtils.format(blockWorth))).append("\n");
+                    stringBuilder.append(Message.BLOCK_VALUE.getMessage(locale, keyName,
+                            Formatters.NUMBER_FORMATTER.format(blockWorth))).append("\n");
             }
         }
 
@@ -102,7 +103,8 @@ public final class CmdValue implements ISuperiorCommand {
                 }
             } else {
                 if (!Message.BLOCK_LEVEL.isEmpty(locale))
-                    stringBuilder.append(Message.BLOCK_LEVEL.getMessage(locale, keyName, StringUtils.format(blockLevel))).append("\n");
+                    stringBuilder.append(Message.BLOCK_LEVEL.getMessage(locale, keyName,
+                            Formatters.NUMBER_FORMATTER.format(blockLevel))).append("\n");
             }
         }
 
@@ -111,7 +113,7 @@ public final class CmdValue implements ISuperiorCommand {
 
     @Override
     public List<String> tabComplete(SuperiorSkyblockPlugin plugin, CommandSender sender, String[] args) {
-        return new ArrayList<>();
+        return Collections.emptyList();
     }
 
 }

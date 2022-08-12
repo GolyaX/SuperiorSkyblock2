@@ -4,13 +4,13 @@ import com.bgsoftware.superiorskyblock.api.island.Island;
 import org.bukkit.Location;
 import org.bukkit.World;
 
+import javax.annotation.Nullable;
 import java.util.UUID;
 
 public interface WorldsProvider {
 
     /**
      * Prepare all the island worlds on startup.
-     * They must be loaded so SSB will be able to load the islands!
      */
     void prepareWorlds();
 
@@ -20,6 +20,7 @@ public interface WorldsProvider {
      * @param environment The world environment.
      * @param island      The island to check.
      */
+    @Nullable
     World getIslandsWorld(Island island, World.Environment environment);
 
     /**

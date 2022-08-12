@@ -2,38 +2,33 @@ package com.bgsoftware.superiorskyblock.nms;
 
 import com.bgsoftware.superiorskyblock.SuperiorSkyblockPlugin;
 import com.bgsoftware.superiorskyblock.api.island.Island;
+import com.bgsoftware.superiorskyblock.api.key.Key;
 import com.bgsoftware.superiorskyblock.api.wrappers.SuperiorPlayer;
-import com.bgsoftware.superiorskyblock.key.Key;
+import com.bgsoftware.superiorskyblock.core.SchematicBlock;
 import com.bgsoftware.superiorskyblock.tag.CompoundTag;
-import com.bgsoftware.superiorskyblock.world.blocks.BlockData;
-import com.bgsoftware.superiorskyblock.world.blocks.ICachedBlock;
 import org.bukkit.Chunk;
 import org.bukkit.ChunkSnapshot;
 import org.bukkit.Location;
 import org.bukkit.World;
-import org.bukkit.block.Biome;
 import org.bukkit.block.Block;
 import org.bukkit.block.CreatureSpawner;
 import org.bukkit.event.block.SignChangeEvent;
 import org.bukkit.generator.ChunkGenerator;
 
 import java.util.List;
+import java.util.function.IntFunction;
 
 public interface NMSWorld {
 
     Key getBlockKey(ChunkSnapshot chunkSnapshot, int x, int y, int z);
 
-    int getSpawnerDelay(CreatureSpawner creatureSpawner);
-
-    void setSpawnerDelay(CreatureSpawner creatureSpawner, int spawnDelay);
+    void listenSpawner(CreatureSpawner creatureSpawner, IntFunction<Integer> delayChangeCallback);
 
     void setWorldBorder(SuperiorPlayer superiorPlayer, Island island);
 
-    void setBiome(ChunkGenerator.BiomeGrid biomeGrid, Biome biome);
-
     Object getBlockData(Block block);
 
-    void setBlocks(Chunk chunk, List<BlockData> blockDataList);
+    void setBlocks(Chunk chunk, List<SchematicBlock> blockDataList);
 
     void setBlock(Location location, int combinedId);
 

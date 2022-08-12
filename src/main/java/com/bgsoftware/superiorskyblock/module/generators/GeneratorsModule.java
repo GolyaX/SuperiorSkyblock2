@@ -3,19 +3,20 @@ package com.bgsoftware.superiorskyblock.module.generators;
 import com.bgsoftware.common.config.CommentedConfiguration;
 import com.bgsoftware.superiorskyblock.SuperiorSkyblockPlugin;
 import com.bgsoftware.superiorskyblock.api.commands.SuperiorCommand;
-import com.bgsoftware.superiorskyblock.module.BuiltinModule;
 import com.bgsoftware.superiorskyblock.module.generators.commands.CmdAdminAddGenerator;
 import com.bgsoftware.superiorskyblock.module.generators.commands.CmdAdminClearGenerator;
 import com.bgsoftware.superiorskyblock.module.generators.commands.CmdAdminSetGenerator;
+import com.bgsoftware.superiorskyblock.module.BuiltinModule;
 import com.bgsoftware.superiorskyblock.module.generators.listeners.GeneratorsListener;
-import com.bgsoftware.superiorskyblock.utils.debug.PluginDebugger;
+import com.bgsoftware.superiorskyblock.core.debug.PluginDebugger;
 import org.bukkit.event.Listener;
 
 import java.io.File;
 
-public final class GeneratorsModule extends BuiltinModule {
+public class GeneratorsModule extends BuiltinModule {
 
     private boolean enabled = true;
+    private boolean matchGeneratorWorld = true;
 
     public GeneratorsModule() {
         super("generators");
@@ -32,7 +33,7 @@ public final class GeneratorsModule extends BuiltinModule {
             super.config.set("enabled", config.getBoolean("generators"));
             config.set("generators", null);
 
-            File moduleConfigFile = new File(getDataFolder(), "config.yml");
+            File moduleConfigFile = new File(getModuleFolder(), "config.yml");
 
             try {
                 super.config.save(moduleConfigFile);
@@ -52,6 +53,11 @@ public final class GeneratorsModule extends BuiltinModule {
 
     @Override
     public void onDisable(SuperiorSkyblockPlugin plugin) {
+        // Do nothing.
+    }
+
+    @Override
+    public void loadData(SuperiorSkyblockPlugin plugin) {
         // Do nothing.
     }
 
@@ -78,6 +84,11 @@ public final class GeneratorsModule extends BuiltinModule {
     @Override
     protected void updateConfig(SuperiorSkyblockPlugin plugin) {
         enabled = config.getBoolean("enabled");
+        matchGeneratorWorld = config.getBoolean("match-generator-world");
+    }
+
+    public boolean isMatchGeneratorWorld() {
+        return matchGeneratorWorld;
     }
 
 }

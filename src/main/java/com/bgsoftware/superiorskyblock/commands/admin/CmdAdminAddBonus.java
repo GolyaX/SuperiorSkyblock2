@@ -1,21 +1,22 @@
 package com.bgsoftware.superiorskyblock.commands.admin;
 
-import com.bgsoftware.superiorskyblock.lang.Message;
 import com.bgsoftware.superiorskyblock.SuperiorSkyblockPlugin;
+import com.bgsoftware.superiorskyblock.api.events.IslandChangeLevelBonusEvent;
+import com.bgsoftware.superiorskyblock.api.events.IslandChangeWorthBonusEvent;
 import com.bgsoftware.superiorskyblock.api.island.Island;
 import com.bgsoftware.superiorskyblock.api.wrappers.SuperiorPlayer;
-import com.bgsoftware.superiorskyblock.commands.CommandArguments;
 import com.bgsoftware.superiorskyblock.commands.CommandTabCompletes;
 import com.bgsoftware.superiorskyblock.commands.IAdminIslandCommand;
-import com.bgsoftware.superiorskyblock.threads.Executor;
+import com.bgsoftware.superiorskyblock.commands.arguments.CommandArguments;
+import com.bgsoftware.superiorskyblock.core.events.EventResult;
+import com.bgsoftware.superiorskyblock.core.messages.Message;
 import org.bukkit.command.CommandSender;
 
 import java.math.BigDecimal;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-public final class CmdAdminAddBonus implements IAdminIslandCommand {
+public class CmdAdminAddBonus implements IAdminIslandCommand {
 
     @Override
     public List<String> getAliases() {
@@ -70,19 +71,35 @@ public final class CmdAdminAddBonus implements IAdminIslandCommand {
         if (bonus == null)
             return;
 
-        Executor.data(() -> islands.forEach(island -> {
-            if (isWorthBonus)
-                island.setBonusWorth(island.getBonusWorth().add(bonus));
-            else
-                island.setBonusLevel(island.getBonusLevel().add(bonus));
-        }));
+        boolean anyIslandChanged = false;
+
+        for (Island island : islands) {
+            if (isWorthBonus) {
+                EventResult<BigDecimal> eventResult = plugin.getEventsBus().callIslandChangeWorthBonusEvent(sender, island,
+                        IslandChangeWorthBonusEvent.Reason.COMMAND, island.getBonusWorth().add(bonus));
+                if (!eventResult.isCancelled()) {
+                    island.setBonusWorth(eventResult.getResult());
+                    anyIslandChanged = true;
+                }
+            } else {
+                EventResult<BigDecimal> eventResult = plugin.getEventsBus().callIslandChangeLevelBonusEvent(sender, island,
+                        IslandChangeLevelBonusEvent.Reason.COMMAND, island.getBonusLevel().add(bonus));
+                if (!eventResult.isCancelled()) {
+                    island.setBonusLevel(eventResult.getResult());
+                    anyIslandChanged = true;
+                }
+            }
+        }
+
+        if (!anyIslandChanged)
+            return;
 
         Message.BONUS_SET_SUCCESS.send(sender, bonus.toString());
     }
 
     @Override
     public List<String> adminTabComplete(SuperiorSkyblockPlugin plugin, CommandSender sender, Island island, String[] args) {
-        return args.length == 4 ? CommandTabCompletes.getCustomComplete(args[3], "worth", "level") : new ArrayList<>();
+        return args.length == 4 ? CommandTabCompletes.getCustomComplete(args[3], "worth", "level") : Collections.emptyList();
     }
 
 }

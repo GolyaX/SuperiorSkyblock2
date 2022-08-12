@@ -1,13 +1,18 @@
 package com.bgsoftware.superiorskyblock.nms.v1_17_R1;
 
 import com.bgsoftware.superiorskyblock.SuperiorSkyblockPlugin;
-import com.bgsoftware.superiorskyblock.key.Key;
+import com.bgsoftware.superiorskyblock.api.key.Key;
+import com.bgsoftware.superiorskyblock.core.key.KeyImpl;
 import com.bgsoftware.superiorskyblock.nms.NMSAlgorithms;
-import com.bgsoftware.superiorskyblock.nms.v1_17_R1.algorithms.CustomTileEntityHopper;
 import com.bgsoftware.superiorskyblock.nms.v1_17_R1.algorithms.GlowEnchantmentFactory;
+import com.bgsoftware.superiorskyblock.nms.v1_17_R1.menu.MenuTileEntityBrewing;
+import com.bgsoftware.superiorskyblock.nms.v1_17_R1.menu.MenuTileEntityDispenser;
+import com.bgsoftware.superiorskyblock.nms.v1_17_R1.menu.MenuTileEntityFurnace;
+import com.bgsoftware.superiorskyblock.nms.v1_17_R1.menu.MenuTileEntityHopper;
 import net.minecraft.core.BlockPosition;
 import net.minecraft.core.IRegistry;
 import net.minecraft.network.chat.IChatBaseComponent;
+import net.minecraft.world.IInventory;
 import net.minecraft.world.level.World;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.IBlockData;
@@ -29,9 +34,35 @@ import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.inventory.meta.PotionMeta;
 import org.bukkit.potion.PotionEffect;
 
-public final class NMSAlgorithmsImpl implements NMSAlgorithms {
+import java.util.EnumMap;
+import java.util.function.BiFunction;
 
-    private static final SuperiorSkyblockPlugin plugin = SuperiorSkyblockPlugin.getPlugin();
+public class NMSAlgorithmsImpl implements NMSAlgorithms {
+
+    private static final EnumMap<InventoryType, MenuCreator> MENUS_HOLDER_CREATORS = new EnumMap<>(InventoryType.class);
+
+    static {
+        MENUS_HOLDER_CREATORS.put(InventoryType.DISPENSER, MenuTileEntityDispenser::new);
+        MENUS_HOLDER_CREATORS.put(InventoryType.DROPPER, MenuTileEntityDispenser::new);
+        MENUS_HOLDER_CREATORS.put(InventoryType.FURNACE, MenuTileEntityFurnace::new);
+        MENUS_HOLDER_CREATORS.put(InventoryType.BREWING, MenuTileEntityBrewing::new);
+        MENUS_HOLDER_CREATORS.put(InventoryType.HOPPER, MenuTileEntityHopper::new);
+        MENUS_HOLDER_CREATORS.put(InventoryType.BLAST_FURNACE, MenuTileEntityFurnace::new);
+        MENUS_HOLDER_CREATORS.put(InventoryType.SMOKER, MenuTileEntityFurnace::new);
+    }
+
+    private static final String BUILT_AGAINST_MAPPING = "acd6e6c27e5a0a9440afba70a96c27c9";
+
+    private final SuperiorSkyblockPlugin plugin;
+
+    public NMSAlgorithmsImpl(SuperiorSkyblockPlugin plugin) {
+        this.plugin = plugin;
+    }
+
+    @Override
+    public boolean isMappingsSupported() {
+        return ((CraftMagicNumbers) CraftMagicNumbers.INSTANCE).getMappingsVersion().equals(BUILT_AGAINST_MAPPING);
+    }
 
     @Override
     public void registerCommand(BukkitCommand command) {
@@ -76,17 +107,17 @@ public final class NMSAlgorithmsImpl implements NMSAlgorithms {
     @Override
     public Key getBlockKey(int combinedId) {
         Material material = CraftMagicNumbers.getMaterial(Block.getByCombinedId(combinedId).getBlock());
-        return Key.of(material, (byte) 0);
+        return KeyImpl.of(material, (byte) 0);
     }
 
     @Override
     public Key getMinecartBlock(Minecart minecart) {
-        return Key.of(minecart.getDisplayBlockData().getMaterial(), (byte) 0);
+        return KeyImpl.of(minecart.getDisplayBlockData().getMaterial(), (byte) 0);
     }
 
     @Override
     public Key getFallingBlockType(FallingBlock fallingBlock) {
-        return Key.of(fallingBlock.getBlockData().getMaterial(), (byte) 0);
+        return KeyImpl.of(fallingBlock.getBlockData().getMaterial(), (byte) 0);
     }
 
     @Override
@@ -112,8 +143,13 @@ public final class NMSAlgorithmsImpl implements NMSAlgorithms {
     }
 
     @Override
-    public Object getCustomHolder(InventoryType inventoryType, InventoryHolder defaultHolder, String title) {
-        return new CustomTileEntityHopper(defaultHolder, title);
+    public Object createMenuInventoryHolder(InventoryType inventoryType, InventoryHolder defaultHolder, String title) {
+        MenuCreator menuCreator = MENUS_HOLDER_CREATORS.get(inventoryType);
+        return menuCreator == null ? null : menuCreator.apply(defaultHolder, title);
+    }
+
+    private interface MenuCreator extends BiFunction<InventoryHolder, String, IInventory> {
+
     }
 
 }

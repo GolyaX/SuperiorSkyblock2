@@ -1,6 +1,6 @@
 package com.bgsoftware.superiorskyblock.nms.v1_17_R1;
 
-import com.bgsoftware.superiorskyblock.hologram.Hologram;
+import com.bgsoftware.superiorskyblock.api.service.hologram.Hologram;
 import com.bgsoftware.superiorskyblock.nms.NMSHolograms;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.network.chat.IChatBaseComponent;
@@ -23,11 +23,12 @@ import org.bukkit.craftbukkit.v1_17_R1.CraftWorld;
 import org.bukkit.craftbukkit.v1_17_R1.entity.CraftArmorStand;
 import org.bukkit.craftbukkit.v1_17_R1.entity.CraftEntity;
 import org.bukkit.craftbukkit.v1_17_R1.util.CraftChatMessage;
+import org.bukkit.entity.ArmorStand;
 
 import javax.annotation.Nullable;
 
 @SuppressWarnings("unused")
-public final class NMSHologramsImpl implements NMSHolograms {
+public class NMSHologramsImpl implements NMSHolograms {
 
     @Override
     public Hologram createHologram(Location location) {
@@ -38,8 +39,13 @@ public final class NMSHologramsImpl implements NMSHolograms {
         return entityHologram;
     }
 
+    @Override
+    public boolean isHologram(org.bukkit.entity.Entity entity) {
+        return ((CraftEntity) entity).getHandle() instanceof Hologram;
+    }
+
     @SuppressWarnings("NullableProblems")
-    private static final class EntityHologram extends EntityArmorStand implements Hologram {
+    private static class EntityHologram extends EntityArmorStand implements Hologram {
 
         private static final AxisAlignedBB EMPTY_BOUND = new AxisAlignedBB(0D, 0D, 0D, 0D, 0D, 0D);
 
@@ -66,6 +72,11 @@ public final class NMSHologramsImpl implements NMSHolograms {
         @Override
         public void removeHologram() {
             super.a(Entity.RemovalReason.b);
+        }
+
+        @Override
+        public ArmorStand getHandle() {
+            return this.getBukkitEntity();
         }
 
         @Override
@@ -124,11 +135,11 @@ public final class NMSHologramsImpl implements NMSHolograms {
         }
 
         @Override
-        public CraftEntity getBukkitEntity() {
+        public CraftArmorStand getBukkitEntity() {
             if (bukkitEntity == null) {
                 bukkitEntity = new CraftArmorStand((CraftServer) Bukkit.getServer(), this);
             }
-            return bukkitEntity;
+            return (CraftArmorStand) bukkitEntity;
         }
 
         @Override

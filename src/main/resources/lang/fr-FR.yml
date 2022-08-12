@@ -40,6 +40,9 @@ BLOCK_LEVEL_WORTHLESS: '&e&lNiveau | &7Le bloc {0} n''a pas de valeur.'
 BLOCK_VALUE: '&e&lValeur | &7La valeur du bloc {0} est de {1}.'
 BLOCK_VALUE_WORTHLESS: '&e&lValeur | &7Le bloc {0} n''a pas de valeur.'
 BONUS_SET_SUCCESS: '&e&lIle | &7Bonus de l''île mit à jour sur {0}.'
+BONUS_SYNC_ALL: '&e&lIsland | &7Successfully synced the island bonus to all the islands'
+BONUS_SYNC_NAME: '&e&lIsland | &7Successfully synced the island bonus to {0}.'
+BONUS_SYNC: '&e&lIsland | &7Successfully synced the island bonus to {0}''s island.'
 BORDER_PLAYER_COLOR_NAME_BLUE: 'Bleue'
 BORDER_PLAYER_COLOR_NAME_RED: 'Rouge'
 BORDER_PLAYER_COLOR_NAME_GREEN: 'Verte'
@@ -103,6 +106,7 @@ COMMAND_ARGUMENT_ALL_ISLANDS: '*'
 COMMAND_ARGUMENT_ALL_PLAYERS: '*'
 COMMAND_ARGUMENT_AMOUNT: quantité
 COMMAND_ARGUMENT_BIOME: biome
+COMMAND_ARGUMENT_BORDER_COLOR: 'border-color'
 COMMAND_ARGUMENT_COMMAND: 'commande...'
 COMMAND_ARGUMENT_DISCORD: discord
 COMMAND_ARGUMENT_EFFECT: effet-de-potion
@@ -218,6 +222,7 @@ COMMAND_DESCRIPTION_ADMIN_SHOW: Obtenir des informations sur une île.
 COMMAND_DESCRIPTION_ADMIN_SPAWN: Se téléporter à l'emplacement de spawn.
 COMMAND_DESCRIPTION_ADMIN_SPY: Activer/Désactiver le mode espion du chat
 COMMAND_DESCRIPTION_ADMIN_STATS: Afficher les statistiques du plugin.
+COMMAND_DESCRIPTION_ADMIN_SYNC_BONUS: 'Sync the bonus of an island with the generated worlds.'
 COMMAND_DESCRIPTION_ADMIN_SYNC_UPGRADES: Synchroniser les valeurs des améliorations d'une île.
 COMMAND_DESCRIPTION_ADMIN_UNIGNORE: Réafficher une île dans le top des îles.
 COMMAND_DESCRIPTION_ADMIN_UNLOCK_WORLD: Dévérouiller un mode pour une île.
@@ -351,6 +356,7 @@ INTERACT_OUTSIDE_ISLAND: '&c&lErreur | &7Vous ne pouvez pas interagir en dehors 
 INVALID_AMOUNT: '&c&lErreur | &7Nombre invalide {0}.'
 INVALID_BIOME: '&c&lErreur | &7Biome invalide {0}.'
 INVALID_BLOCK: '&c&lErreur | &7Emplacement {0} du bloc invalide.'
+INVALID_BORDER_COLOR: '&c&lError | &7Invalid border color {0}.'
 INVALID_EFFECT: '&c&lErreur | &7Effet invalide {0}.'
 INVALID_ENTITY: '&c&lErreur | &7Entité invalide {0}.'
 INVALID_SCHEMATIC: '&c&lErreur | &7Il n''existe aucun schematic portant le nom {0}.'
@@ -487,6 +493,7 @@ ISLAND_PREVIEW_START: |
   &e&lPrévisualisation | &7Tapez &a&lCONFIRMER &7pour séléctionner cette île, ou &c&lANNULER &7pour annuler la prévisualisation.
   &e&lPrévisualisation | &7Si vous quittez la zone de l'île, la prévisualisation sera désactivée.
 ISLAND_PROTECTED: '&c&lErreur | &7Cette île est protégée.'
+ISLAND_PROTECTED_OPPED: '&7&oYou can bypass this restriction by using "/is admin bypass".'
 ISLAND_TEAM_STATUS_FOOTER: ''
 ISLAND_TEAM_STATUS_HEADER: '&e&lIle | &7Membres de l''île de {0} &8[&e{1}&8/&e{2}&8]&7:'
 ISLAND_TEAM_STATUS_OFFLINE: '&c(Hors Ligne)'
@@ -597,6 +604,8 @@ PERMISSION_CHANGED_NAME: '&e&lIle | &7Permission {0} de l''île {1} mise à jour
 PERMISSION_CHANGED_ALL: '&e&lIle | &7Permission {0} mise à jour pour toutes les îles.'
 PERMISSIONS_RESET_PLAYER: '&e&lIle | &7Réinitialisation de toutes les permissions de {0} !'
 PERMISSIONS_RESET_ROLES: '&e&lIle | &7Réinitialisation de toutes les permissions de l''île !'
+PLACEHOLDER_NO: 'No'
+PLACEHOLDER_YES: 'Yes'
 PLAYER_ALREADY_BANNED: '&c&lErreur | &7Ce joueur est déjà banni.'
 PLAYER_ALREADY_COOP: '&c&lErreur | &7Ce joueur est déjà coopérateur.'
 PLAYER_ALREADY_IN_ISLAND: '&c&lErreur | &7Ce joueur est déjà membre d''une île.'
@@ -693,6 +702,7 @@ TRANSFER_ALREADY_LEADER: '&c&lErreur | &7Vous êtes déjà le chef de l''île.'
 TRANSFER_BROADCAST: '&e&lIle | &7Le Chef de l''île est désormais {0}.'
 UNBAN_ANNOUNCEMENT: '&e&lIle | &7{0} a été DÉBANNI de l''île par {1}.'
 UNCOOP_ANNOUNCEMENT: '&e&lIle | &7{0} a retiré le rôle de coopérateur de {1}.'
+UNCOOP_AUTO_ANNOUNCEMENT: '&e&lIsland | &7There are no island members online and therefore you were un-cooped automatically.'
 UNCOOP_LEFT_ANNOUNCEMENT: '&e&lIle | &7{0} a quitté le jeu et n''est désormais plus un coopérateur.'
 UNIGNORED_ISLAND: '&e&lIle | &7L''île de {0} est désormais visible dans le top des îles.'
 UNIGNORED_ISLAND_NAME: '&e&lIle | &7L''île {0} n''est plus masquée dans le top des îles.'
@@ -738,4 +748,5 @@ WITHDRAW_ANNOUNCEMENT: '&e&lBanque | &7{0} a retiré {1}$ du compte de l''île !
 WITHDRAW_ERROR: '&c&lErreur | &7{0}.'
 WITHDRAWN_MONEY: '&e&lBanque | &7Vous avez retiré {0}$ du compte de l''île de {1} !'
 WITHDRAWN_MONEY_NAME: '&e&lBanque | &7Vous avez retiré {0}$ du compte de l''île {1} !'
+WORLD_NOT_ENABLED: '&e&lWorlds | &7This world is not enabled on the server.'
 WORLD_NOT_UNLOCKED: '&e&lMondes | &7Le monde {0} n''a pas encore été dévérouillé !'

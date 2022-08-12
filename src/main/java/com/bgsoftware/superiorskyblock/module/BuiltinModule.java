@@ -5,8 +5,8 @@ import com.bgsoftware.superiorskyblock.SuperiorSkyblockPlugin;
 import com.bgsoftware.superiorskyblock.api.SuperiorSkyblock;
 import com.bgsoftware.superiorskyblock.api.commands.SuperiorCommand;
 import com.bgsoftware.superiorskyblock.api.modules.PluginModule;
-import com.bgsoftware.superiorskyblock.utils.FileUtils;
-import com.bgsoftware.superiorskyblock.utils.debug.PluginDebugger;
+import com.bgsoftware.superiorskyblock.core.io.Resources;
+import com.bgsoftware.superiorskyblock.core.debug.PluginDebugger;
 import org.bukkit.event.Listener;
 
 import java.io.File;
@@ -32,6 +32,10 @@ public abstract class BuiltinModule extends PluginModule {
     @Override
     public void onDisable(SuperiorSkyblock plugin) {
         onDisable((SuperiorSkyblockPlugin) plugin);
+    }
+
+    public void loadData(SuperiorSkyblock plugin) {
+        loadData((SuperiorSkyblockPlugin) plugin);
     }
 
     @Override
@@ -60,7 +64,7 @@ public abstract class BuiltinModule extends PluginModule {
 
         try {
             config.syncWithConfig(configFile,
-                    FileUtils.getResource("modules/" + getName() + "/config.yml"),
+                    Resources.getResource("modules/" + getName() + "/config.yml"),
                     getIgnoredSections());
         } catch (Exception ex) {
             ex.printStackTrace();
@@ -71,10 +75,10 @@ public abstract class BuiltinModule extends PluginModule {
     }
 
     public File createConfig() {
-        File configFile = new File(getDataFolder(), "config.yml");
+        File configFile = new File(getModuleFolder(), "config.yml");
 
         if (!configFile.exists())
-            FileUtils.saveResource("modules/" + getName() + "/config.yml");
+            Resources.saveResource("modules/" + getName() + "/config.yml");
 
         return configFile;
     }
@@ -82,6 +86,8 @@ public abstract class BuiltinModule extends PluginModule {
     public abstract void onEnable(SuperiorSkyblockPlugin plugin);
 
     public abstract void onDisable(SuperiorSkyblockPlugin plugin);
+
+    public abstract void loadData(SuperiorSkyblockPlugin plugin);
 
     public abstract Listener[] getModuleListeners(SuperiorSkyblockPlugin plugin);
 

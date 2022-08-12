@@ -1,21 +1,20 @@
 package com.bgsoftware.superiorskyblock.commands.player;
 
-import com.bgsoftware.superiorskyblock.lang.Message;
 import com.bgsoftware.superiorskyblock.SuperiorSkyblockPlugin;
 import com.bgsoftware.superiorskyblock.api.island.Island;
 import com.bgsoftware.superiorskyblock.api.island.IslandPrivilege;
 import com.bgsoftware.superiorskyblock.api.island.PlayerRole;
 import com.bgsoftware.superiorskyblock.api.wrappers.SuperiorPlayer;
-import com.bgsoftware.superiorskyblock.commands.CommandArguments;
 import com.bgsoftware.superiorskyblock.commands.CommandTabCompletes;
 import com.bgsoftware.superiorskyblock.commands.IPermissibleCommand;
-import com.bgsoftware.superiorskyblock.island.permissions.IslandPrivileges;
+import com.bgsoftware.superiorskyblock.commands.arguments.CommandArguments;
+import com.bgsoftware.superiorskyblock.core.messages.Message;
+import com.bgsoftware.superiorskyblock.island.privilege.IslandPrivileges;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-public final class CmdPromote implements IPermissibleCommand {
+public class CmdPromote implements IPermissibleCommand {
 
     @Override
     public List<String> getAliases() {
@@ -105,6 +104,9 @@ public final class CmdPromote implements IPermissibleCommand {
             return;
         }
 
+        if (!plugin.getEventsBus().callPlayerChangeRoleEvent(targetPlayer, nextRole))
+            return;
+
         targetPlayer.setPlayerRole(nextRole);
 
         Message.PROMOTED_MEMBER.send(superiorPlayer, targetPlayer.getName(), targetPlayer.getPlayerRole());
@@ -113,7 +115,7 @@ public final class CmdPromote implements IPermissibleCommand {
 
     @Override
     public List<String> tabComplete(SuperiorSkyblockPlugin plugin, SuperiorPlayer superiorPlayer, Island island, String[] args) {
-        return args.length != 2 ? new ArrayList<>() : CommandTabCompletes.getIslandMembers(island, args[1], islandMember -> {
+        return args.length != 2 ? Collections.emptyList() : CommandTabCompletes.getIslandMembers(island, args[1], islandMember -> {
             PlayerRole playerRole = islandMember.getPlayerRole();
             PlayerRole nextRole = playerRole.getNextRole();
             return nextRole != null && !nextRole.isLastRole() && playerRole.isLessThan(superiorPlayer.getPlayerRole()) &&

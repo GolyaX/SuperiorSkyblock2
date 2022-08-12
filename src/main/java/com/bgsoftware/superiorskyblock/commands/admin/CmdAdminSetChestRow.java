@@ -1,22 +1,21 @@
 package com.bgsoftware.superiorskyblock.commands.admin;
 
-import com.bgsoftware.superiorskyblock.lang.Message;
 import com.bgsoftware.superiorskyblock.SuperiorSkyblockPlugin;
 import com.bgsoftware.superiorskyblock.api.island.Island;
-import com.bgsoftware.superiorskyblock.api.objects.Pair;
 import com.bgsoftware.superiorskyblock.api.wrappers.SuperiorPlayer;
-import com.bgsoftware.superiorskyblock.commands.CommandArguments;
 import com.bgsoftware.superiorskyblock.commands.CommandTabCompletes;
 import com.bgsoftware.superiorskyblock.commands.IAdminIslandCommand;
-import com.bgsoftware.superiorskyblock.threads.Executor;
+import com.bgsoftware.superiorskyblock.commands.arguments.CommandArguments;
+import com.bgsoftware.superiorskyblock.commands.arguments.NumberArgument;
+import com.bgsoftware.superiorskyblock.core.messages.Message;
+import com.bgsoftware.superiorskyblock.core.threads.BukkitExecutor;
 import org.bukkit.command.CommandSender;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.IntStream;
 
-public final class CmdAdminSetChestRow implements IAdminIslandCommand {
+public class CmdAdminSetChestRow implements IAdminIslandCommand {
 
     @Override
     public List<String> getAliases() {
@@ -65,26 +64,26 @@ public final class CmdAdminSetChestRow implements IAdminIslandCommand {
 
     @Override
     public void execute(SuperiorSkyblockPlugin plugin, CommandSender sender, SuperiorPlayer targetPlayer, List<Island> islands, String[] args) {
-        Pair<Integer, Boolean> pageArguments = CommandArguments.getPage(sender, args[3]);
+        NumberArgument<Integer> pageArguments = CommandArguments.getPage(sender, args[3]);
 
-        if (!pageArguments.getValue())
+        if (!pageArguments.isSucceed())
             return;
 
-        int page = pageArguments.getKey();
+        int page = pageArguments.getNumber();
 
-        Pair<Integer, Boolean> rowsArguments = CommandArguments.getRows(sender, args[4]);
+        NumberArgument<Integer> rowsArguments = CommandArguments.getRows(sender, args[4]);
 
-        if (!rowsArguments.getValue())
+        if (!rowsArguments.isSucceed())
             return;
 
-        int rows = rowsArguments.getKey();
+        int rows = rowsArguments.getNumber();
 
         if (rows < 1 || rows > 6) {
             Message.INVALID_ROWS.send(sender, args[4]);
             return;
         }
 
-        Executor.data(() -> islands.forEach(island -> island.setChestRows(page - 1, rows)));
+        BukkitExecutor.data(() -> islands.forEach(island -> island.setChestRows(page - 1, rows)));
 
         if (islands.size() > 1)
             Message.CHANGED_CHEST_SIZE_ALL.send(sender, page, rows);
@@ -100,7 +99,7 @@ public final class CmdAdminSetChestRow implements IAdminIslandCommand {
                 CommandTabCompletes.getCustomComplete(args[3], IntStream.range(1, island.getChestSize() + 1)) :
                 args.length == 5 && island != null ?
                         CommandTabCompletes.getCustomComplete(args[4], IntStream.range(1, 7)) :
-                        new ArrayList<>();
+                        Collections.emptyList();
     }
 
 }

@@ -1,17 +1,18 @@
 package com.bgsoftware.superiorskyblock.commands.player;
 
-import com.bgsoftware.superiorskyblock.lang.Message;
+import com.bgsoftware.superiorskyblock.core.messages.Message;
 import com.bgsoftware.superiorskyblock.SuperiorSkyblockPlugin;
 import com.bgsoftware.superiorskyblock.api.island.Island;
 import com.bgsoftware.superiorskyblock.api.island.IslandPrivilege;
 import com.bgsoftware.superiorskyblock.api.wrappers.SuperiorPlayer;
 import com.bgsoftware.superiorskyblock.commands.IPermissibleCommand;
-import com.bgsoftware.superiorskyblock.island.permissions.IslandPrivileges;
+import com.bgsoftware.superiorskyblock.island.privilege.IslandPrivileges;
+import com.bgsoftware.superiorskyblock.core.events.EventResult;
 
 import java.util.Collections;
 import java.util.List;
 
-public final class CmdSetPaypal implements IPermissibleCommand {
+public class CmdSetPaypal implements IPermissibleCommand {
 
     @Override
     public List<String> getAliases() {
@@ -60,8 +61,13 @@ public final class CmdSetPaypal implements IPermissibleCommand {
 
     @Override
     public void execute(SuperiorSkyblockPlugin plugin, SuperiorPlayer superiorPlayer, Island island, String[] args) {
-        island.setPaypal(args[1]);
-        Message.CHANGED_PAYPAL.send(superiorPlayer, args[1]);
+        EventResult<String> eventResult = plugin.getEventsBus().callIslandChangePaypalEvent(superiorPlayer, island, args[1]);
+
+        if (eventResult.isCancelled())
+            return;
+
+        island.setPaypal(eventResult.getResult());
+        Message.CHANGED_PAYPAL.send(superiorPlayer, eventResult.getResult());
     }
 
 }

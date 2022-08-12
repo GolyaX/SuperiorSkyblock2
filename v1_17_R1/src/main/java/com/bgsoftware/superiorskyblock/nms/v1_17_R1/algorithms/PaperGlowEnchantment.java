@@ -5,10 +5,10 @@ import net.kyori.adventure.text.Component;
 import org.bukkit.entity.EntityCategory;
 import org.bukkit.inventory.EquipmentSlot;
 
-import java.util.HashSet;
+import java.util.Collections;
 import java.util.Set;
 
-public final class PaperGlowEnchantment extends SpigotGlowEnchantment {
+public class PaperGlowEnchantment extends SpigotGlowEnchantment {
 
     public PaperGlowEnchantment(String name) {
         super(name);
@@ -41,7 +41,7 @@ public final class PaperGlowEnchantment extends SpigotGlowEnchantment {
 
     @Override
     public Set<EquipmentSlot> getActiveSlots() {
-        return new HashSet<>();
+        return Collections.emptySet();
     }
 
 }

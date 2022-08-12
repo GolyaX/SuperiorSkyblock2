@@ -35,8 +35,8 @@ package com.bgsoftware.superiorskyblock.tag;
 import com.bgsoftware.common.reflection.ReflectConstructor;
 import com.bgsoftware.common.reflection.ReflectMethod;
 import com.bgsoftware.superiorskyblock.SuperiorSkyblockPlugin;
-import com.bgsoftware.superiorskyblock.utils.ServerVersion;
-import com.bgsoftware.superiorskyblock.utils.debug.PluginDebugger;
+import com.bgsoftware.superiorskyblock.core.ServerVersion;
+import com.bgsoftware.superiorskyblock.core.debug.PluginDebugger;
 import org.bukkit.Bukkit;
 
 import java.io.DataInputStream;
@@ -122,6 +122,12 @@ public abstract class Tag<E> {
                 return CompoundTag.fromStream(is, depth);
             case NBTTags.TYPE_INT_ARRAY:
                 return IntArrayTag.fromStream(is);
+            case NBTTags.TYPE_BIG_DECIMAL:
+                return BigDecimalTag.fromStream(is);
+            case NBTTags.TYPE_UUID:
+                return UUIDTag.fromStream(is);
+            case NBTTags.TYPE_PERSISTENT_DATA:
+                return PersistentDataTagSerialized.fromStream(is);
         }
 
         throw new IllegalArgumentException("Invalid tag: " + type);

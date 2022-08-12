@@ -1,21 +1,21 @@
 package com.bgsoftware.superiorskyblock.commands.player;
 
-import com.bgsoftware.superiorskyblock.lang.Message;
 import com.bgsoftware.superiorskyblock.SuperiorSkyblockPlugin;
 import com.bgsoftware.superiorskyblock.api.island.Island;
 import com.bgsoftware.superiorskyblock.api.wrappers.SuperiorPlayer;
+import com.bgsoftware.superiorskyblock.core.messages.Message;
 import com.bgsoftware.superiorskyblock.commands.CommandTabCompletes;
 import com.bgsoftware.superiorskyblock.commands.ISuperiorCommand;
-import com.bgsoftware.superiorskyblock.island.SPlayerRole;
-import com.bgsoftware.superiorskyblock.utils.events.EventsCaller;
-import com.bgsoftware.superiorskyblock.utils.islands.IslandUtils;
+import com.bgsoftware.superiorskyblock.island.role.SPlayerRole;
+import com.bgsoftware.superiorskyblock.island.IslandUtils;
 import org.bukkit.command.CommandSender;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
-public final class CmdAccept implements ISuperiorCommand {
+public class CmdAccept implements ISuperiorCommand {
 
     @Override
     public List<String> getAliases() {
@@ -66,7 +66,7 @@ public final class CmdAccept implements ISuperiorCommand {
                 return;
             }
         } else {
-            if ((island = plugin.getGrid().getIsland(targetPlayer)) == null || !island.isInvited(superiorPlayer)) {
+            if ((island = targetPlayer.getIsland()) == null || !island.isInvited(superiorPlayer)) {
                 Message.NO_ISLAND_INVITE.send(superiorPlayer);
                 return;
             }
@@ -83,10 +83,10 @@ public final class CmdAccept implements ISuperiorCommand {
             return;
         }
 
-        if (!EventsCaller.callIslandJoinEvent(superiorPlayer, island))
+        if (!plugin.getEventsBus().callIslandJoinEvent(superiorPlayer, island))
             return;
 
-        IslandUtils.sendMessage(island, Message.JOIN_ANNOUNCEMENT, new ArrayList<>(), superiorPlayer.getName());
+        IslandUtils.sendMessage(island, Message.JOIN_ANNOUNCEMENT, Collections.emptyList(), superiorPlayer.getName());
 
         island.revokeInvite(superiorPlayer);
         island.addMember(superiorPlayer, SPlayerRole.defaultRole());
@@ -107,7 +107,7 @@ public final class CmdAccept implements ISuperiorCommand {
         SuperiorPlayer superiorPlayer = plugin.getPlayers().getSuperiorPlayer(sender);
         return args.length == 2 ? CommandTabCompletes.getOnlinePlayersWithIslands(plugin, args[1],
                 plugin.getSettings().isTabCompleteHideVanished(), (onlinePlayer, onlineIsland) ->
-                        onlineIsland != null && onlineIsland.isInvited(superiorPlayer)) : new ArrayList<>();
+                        onlineIsland != null && onlineIsland.isInvited(superiorPlayer)) : Collections.emptyList();
     }
 
 }

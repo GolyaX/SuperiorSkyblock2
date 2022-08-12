@@ -1,20 +1,19 @@
 package com.bgsoftware.superiorskyblock.commands.admin;
 
-import com.bgsoftware.superiorskyblock.lang.Message;
 import com.bgsoftware.superiorskyblock.SuperiorSkyblockPlugin;
 import com.bgsoftware.superiorskyblock.api.island.Island;
 import com.bgsoftware.superiorskyblock.commands.CommandTabCompletes;
 import com.bgsoftware.superiorskyblock.commands.ISuperiorCommand;
-import com.bgsoftware.superiorskyblock.utils.StringUtils;
-import com.bgsoftware.superiorskyblock.threads.Executor;
+import com.bgsoftware.superiorskyblock.core.SequentialListBuilder;
+import com.bgsoftware.superiorskyblock.core.messages.Message;
+import com.bgsoftware.superiorskyblock.core.threads.BukkitExecutor;
 import org.bukkit.command.CommandSender;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.stream.Collectors;
 
-public final class CmdAdminPurge implements ISuperiorCommand {
+public class CmdAdminPurge implements ISuperiorCommand {
 
     @Override
     public List<String> getAliases() {
@@ -57,18 +56,18 @@ public final class CmdAdminPurge implements ISuperiorCommand {
             plugin.getGrid().getIslandsToPurge().forEach(island -> plugin.getGrid().removeIslandFromPurge(island));
             Message.PURGE_CLEAR.send(sender);
         } else {
-            long timeToPurge = StringUtils.parseLong(args[2]);
+            long timeToPurge = parseLongSafe(args[2]);
             long currentTime = System.currentTimeMillis() / 1000;
 
-            List<Island> islands = plugin.getGrid().getIslands().stream().filter(island -> {
+            List<Island> islands = new SequentialListBuilder<Island>().filter(island -> {
                 long lastTimeUpdate = island.getLastTimeUpdate();
                 return lastTimeUpdate != -1 && currentTime - lastTimeUpdate >= timeToPurge;
-            }).collect(Collectors.toList());
+            }).build(plugin.getGrid().getIslands());
 
             if (islands.isEmpty()) {
                 Message.NO_ISLANDS_TO_PURGE.send(sender);
             } else {
-                Executor.async(() -> islands.forEach(island -> plugin.getGrid().addIslandToPurge(island)));
+                BukkitExecutor.async(() -> islands.forEach(island -> plugin.getGrid().addIslandToPurge(island)));
                 Message.PURGED_ISLANDS.send(sender, islands.size());
             }
         }
@@ -76,7 +75,15 @@ public final class CmdAdminPurge implements ISuperiorCommand {
 
     @Override
     public List<String> tabComplete(SuperiorSkyblockPlugin plugin, CommandSender sender, String[] args) {
-        return args.length == 3 ? CommandTabCompletes.getCustomComplete(args[2], "cancel") : new ArrayList<>();
+        return args.length == 3 ? CommandTabCompletes.getCustomComplete(args[2], "cancel") : Collections.emptyList();
+    }
+
+    private static long parseLongSafe(String value) {
+        try {
+            return Long.parseLong(value);
+        } catch (Exception error) {
+            return 0;
+        }
     }
 
 }

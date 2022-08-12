@@ -29,8 +29,8 @@ import org.bukkit.event.entity.CreatureSpawnEvent;
 
 import java.util.Set;
 
-@SuppressWarnings({"unused", "rawtypes"})
-public final class NMSTagsImpl implements NMSTags {
+@SuppressWarnings({"unused"})
+public class NMSTagsImpl implements NMSTags {
 
     @Override
     public CompoundTag getNBTTag(org.bukkit.inventory.ItemStack bukkitStack) {
@@ -136,7 +136,7 @@ public final class NMSTagsImpl implements NMSTags {
     public Object parseList(ListTag listTag) {
         NBTTagList nbtTagList = new NBTTagList();
 
-        for (Tag tag : listTag.getValue())
+        for (Tag<?> tag : listTag)
             nbtTagList.add((NBTBase) tag.toNBT());
 
         return nbtTagList;

@@ -3,14 +3,14 @@ package com.bgsoftware.superiorskyblock.nms.v1_17_R1;
 import com.bgsoftware.common.reflection.ReflectField;
 import com.bgsoftware.common.reflection.ReflectMethod;
 import com.bgsoftware.superiorskyblock.SuperiorSkyblockPlugin;
+import com.bgsoftware.superiorskyblock.core.debug.PluginDebugger;
+import com.bgsoftware.superiorskyblock.core.threads.BukkitExecutor;
 import com.bgsoftware.superiorskyblock.nms.v1_17_R1.world.BlockStatesMapper;
 import com.bgsoftware.superiorskyblock.tag.ByteTag;
 import com.bgsoftware.superiorskyblock.tag.CompoundTag;
 import com.bgsoftware.superiorskyblock.tag.IntArrayTag;
 import com.bgsoftware.superiorskyblock.tag.StringTag;
 import com.bgsoftware.superiorskyblock.tag.Tag;
-import com.bgsoftware.superiorskyblock.threads.Executor;
-import com.bgsoftware.superiorskyblock.utils.debug.PluginDebugger;
 import com.google.common.base.Suppliers;
 import net.minecraft.core.BlockPosition;
 import net.minecraft.core.SectionPosition;
@@ -20,6 +20,7 @@ import net.minecraft.server.level.PlayerChunk;
 import net.minecraft.server.level.PlayerChunkMap;
 import net.minecraft.server.level.WorldServer;
 import net.minecraft.world.level.ChunkCoordIntPair;
+import net.minecraft.world.level.World;
 import net.minecraft.world.level.block.BlockBed;
 import net.minecraft.world.level.block.entity.TileEntity;
 import net.minecraft.world.level.block.state.IBlockData;
@@ -29,17 +30,16 @@ import net.minecraft.world.level.chunk.ChunkConverter;
 import net.minecraft.world.level.chunk.ChunkSection;
 import net.minecraft.world.level.chunk.IChunkAccess;
 import net.minecraft.world.level.chunk.ProtoChunk;
-import net.minecraft.world.level.chunk.storage.ChunkRegionLoader;
 import net.minecraft.world.level.levelgen.HeightMap;
 
-import java.util.ArrayList;
 import java.util.Collection;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
-public final class NMSUtils {
+public class NMSUtils {
 
     private static final SuperiorSkyblockPlugin plugin = SuperiorSkyblockPlugin.getPlugin();
 
@@ -55,8 +55,8 @@ public final class NMSUtils {
     public static void runActionOnChunks(WorldServer worldServer, Collection<ChunkCoordIntPair> chunksCoords,
                                          boolean saveChunks, Runnable onFinish, Consumer<Chunk> chunkConsumer,
                                          BiConsumer<ChunkCoordIntPair, NBTTagCompound> unloadedChunkConsumer) {
-        List<ChunkCoordIntPair> unloadedChunks = new ArrayList<>();
-        List<Chunk> loadedChunks = new ArrayList<>();
+        List<ChunkCoordIntPair> unloadedChunks = new LinkedList<>();
+        List<Chunk> loadedChunks = new LinkedList<>();
 
         chunksCoords.forEach(chunkCoords -> {
             IChunkAccess chunkAccess;
@@ -97,23 +97,21 @@ public final class NMSUtils {
                                                  Runnable onFinish) {
         PlayerChunkMap playerChunkMap = worldServer.getChunkProvider().a;
 
-        Executor.createTask().runAsync(v -> {
+        BukkitExecutor.createTask().runAsync(v -> {
             chunks.forEach(chunkCoords -> {
                 try {
                     NBTTagCompound chunkCompound = playerChunkMap.read(chunkCoords);
 
-                    if (chunkCompound == null) {
-                        ProtoChunk protoChunk = createProtoChunk(chunkCoords, worldServer);
-                        chunkCompound = ChunkRegionLoader.saveChunk(worldServer, protoChunk);
-                    } else {
-                        chunkCompound = playerChunkMap.getChunkData(worldServer.getTypeKey(),
-                                Suppliers.ofInstance(worldServer.getWorldPersistentData()), chunkCompound, chunkCoords, worldServer);
-                    }
+                    if (chunkCompound == null)
+                        return;
 
-                    if (chunkCompound.hasKeyOfType("Level", 10)) {
-                        chunkConsumer.accept(chunkCoords, chunkCompound.getCompound("Level"));
+                    NBTTagCompound chunkDataCompound = playerChunkMap.getChunkData(worldServer.getTypeKey(),
+                            Suppliers.ofInstance(worldServer.getWorldPersistentData()), chunkCompound, chunkCoords, worldServer);
+
+                    if (chunkDataCompound.hasKeyOfType("Level", 10)) {
+                        chunkConsumer.accept(chunkCoords, chunkDataCompound.getCompound("Level"));
                         if (saveChunks)
-                            playerChunkMap.a(chunkCoords, chunkCompound);
+                            playerChunkMap.a(chunkCoords, chunkDataCompound);
                     }
                 } catch (Exception ex) {
                     ex.printStackTrace();
@@ -157,10 +155,13 @@ public final class NMSUtils {
 
     public static void setBlock(net.minecraft.world.level.chunk.Chunk chunk, BlockPosition blockPosition,
                                 int combinedId, CompoundTag statesTag, CompoundTag tileEntity) {
+        if (!isValidPosition(chunk.getWorld(), blockPosition))
+            return;
+
         IBlockData blockData = net.minecraft.world.level.block.Block.getByCombinedId(combinedId);
 
         if (statesTag != null) {
-            for (Map.Entry<String, Tag<?>> entry : statesTag.getValue().entrySet()) {
+            for (Map.Entry<String, Tag<?>> entry : statesTag.entrySet()) {
                 try {
                     // noinspection rawtypes
                     IBlockState blockState = BlockStatesMapper.getBlockState(entry.getKey());
@@ -240,6 +241,12 @@ public final class NMSUtils {
                     worldTileEntity.load(tileEntityCompound);
             }
         }
+    }
+
+    private static boolean isValidPosition(World world, BlockPosition blockPosition) {
+        return blockPosition.getX() >= -30000000 && blockPosition.getZ() >= -30000000 &&
+                blockPosition.getX() < 30000000 && blockPosition.getZ() < 30000000 &&
+                blockPosition.getY() >= world.getMinBuildHeight() && blockPosition.getY() < world.getMaxBuildHeight();
     }
 
 }

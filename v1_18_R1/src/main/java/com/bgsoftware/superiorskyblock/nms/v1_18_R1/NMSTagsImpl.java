@@ -1,10 +1,10 @@
 package com.bgsoftware.superiorskyblock.nms.v1_18_R1;
 
 import com.bgsoftware.superiorskyblock.nms.NMSTags;
-import com.bgsoftware.superiorskyblock.nms.v1_18_R1.mapping.level.WorldServer;
-import com.bgsoftware.superiorskyblock.nms.v1_18_R1.mapping.nbt.NBTTagCompound;
-import com.bgsoftware.superiorskyblock.nms.v1_18_R1.mapping.world.entity.Entity;
-import com.bgsoftware.superiorskyblock.nms.v1_18_R1.mapping.world.item.ItemStack;
+import com.bgsoftware.superiorskyblock.nms.v1_18_R1.mapping.net.minecraft.nbt.NBTTagCompound;
+import com.bgsoftware.superiorskyblock.nms.v1_18_R1.mapping.net.minecraft.server.level.WorldServer;
+import com.bgsoftware.superiorskyblock.nms.v1_18_R1.mapping.net.minecraft.world.entity.Entity;
+import com.bgsoftware.superiorskyblock.nms.v1_18_R1.mapping.net.minecraft.world.item.ItemStack;
 import com.bgsoftware.superiorskyblock.tag.CompoundTag;
 import com.bgsoftware.superiorskyblock.tag.ListTag;
 import com.bgsoftware.superiorskyblock.tag.Tag;
@@ -28,7 +28,7 @@ import org.bukkit.entity.EntityType;
 
 import java.util.Set;
 
-@SuppressWarnings({"unused", "rawtypes"})
+@SuppressWarnings({"unused"})
 public final class NMSTagsImpl implements NMSTags {
 
     @Override
@@ -41,7 +41,7 @@ public final class NMSTagsImpl implements NMSTags {
     @Override
     public CompoundTag convertToNBT(org.bukkit.inventory.ItemStack bukkitItem) {
         ItemStack itemStack = new ItemStack(CraftItemStack.asNMSCopy(bukkitItem));
-        return CompoundTag.fromNBT(itemStack.save(new NBTTagCompound()));
+        return CompoundTag.fromNBT(itemStack.save(new NBTTagCompound()).getHandle());
     }
 
     @Override
@@ -141,7 +141,7 @@ public final class NMSTagsImpl implements NMSTags {
     public Object parseList(ListTag listTag) {
         NBTTagList nbtTagList = new NBTTagList();
 
-        for (Tag tag : listTag.getValue())
+        for (Tag<?> tag : listTag)
             nbtTagList.add((NBTBase) tag.toNBT());
 
         return nbtTagList;

@@ -20,7 +20,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
 
-public final class CropsTickingTileEntity extends TileEntity implements ITickable {
+public class CropsTickingTileEntity extends TileEntity implements ITickable {
 
     private static final SuperiorSkyblockPlugin plugin = SuperiorSkyblockPlugin.getPlugin();
 

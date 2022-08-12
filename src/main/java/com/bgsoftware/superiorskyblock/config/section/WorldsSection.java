@@ -1,10 +1,11 @@
 package com.bgsoftware.superiorskyblock.config.section;
 
 import com.bgsoftware.superiorskyblock.api.config.SettingsManager;
+import com.bgsoftware.superiorskyblock.api.wrappers.BlockOffset;
 import com.bgsoftware.superiorskyblock.config.SettingsContainer;
 import org.bukkit.World;
 
-public final class WorldsSection implements SettingsManager.Worlds {
+public class WorldsSection implements SettingsManager.Worlds {
 
     private final SettingsContainer container;
     private final Normal normal = new NormalSection();
@@ -130,7 +131,12 @@ public final class WorldsSection implements SettingsManager.Worlds {
 
         @Override
         public boolean isDragonFight() {
-            return container.endDragonFight;
+            return container.endDragonFightEnabled;
+        }
+
+        @Override
+        public BlockOffset getPortalOffset() {
+            return container.endDragonFightPortalOffset;
         }
     }
 

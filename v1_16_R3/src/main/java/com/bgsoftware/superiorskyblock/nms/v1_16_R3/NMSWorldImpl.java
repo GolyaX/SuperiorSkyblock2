@@ -4,23 +4,25 @@ import com.bgsoftware.common.reflection.ReflectField;
 import com.bgsoftware.common.reflection.ReflectMethod;
 import com.bgsoftware.superiorskyblock.SuperiorSkyblockPlugin;
 import com.bgsoftware.superiorskyblock.api.island.Island;
+import com.bgsoftware.superiorskyblock.api.key.Key;
 import com.bgsoftware.superiorskyblock.api.wrappers.SuperiorPlayer;
-import com.bgsoftware.superiorskyblock.key.Key;
+import com.bgsoftware.superiorskyblock.core.Materials;
+import com.bgsoftware.superiorskyblock.core.SchematicBlock;
+import com.bgsoftware.superiorskyblock.core.Singleton;
+import com.bgsoftware.superiorskyblock.core.formatting.Formatters;
+import com.bgsoftware.superiorskyblock.core.key.KeyImpl;
+import com.bgsoftware.superiorskyblock.listener.SignsListener;
+import com.bgsoftware.superiorskyblock.nms.ICachedBlock;
 import com.bgsoftware.superiorskyblock.nms.NMSWorld;
 import com.bgsoftware.superiorskyblock.nms.v1_16_R3.generator.IslandsGeneratorImpl;
+import com.bgsoftware.superiorskyblock.nms.v1_16_R3.spawners.MobSpawnerAbstractNotifier;
 import com.bgsoftware.superiorskyblock.nms.v1_16_R3.world.BlockStatesMapper;
 import com.bgsoftware.superiorskyblock.tag.ByteTag;
 import com.bgsoftware.superiorskyblock.tag.CompoundTag;
 import com.bgsoftware.superiorskyblock.tag.IntArrayTag;
 import com.bgsoftware.superiorskyblock.tag.StringTag;
 import com.bgsoftware.superiorskyblock.tag.Tag;
-import com.bgsoftware.superiorskyblock.utils.StringUtils;
-import com.bgsoftware.superiorskyblock.utils.logic.BlocksLogic;
-import com.bgsoftware.superiorskyblock.world.blocks.BlockData;
-import com.bgsoftware.superiorskyblock.world.blocks.ICachedBlock;
 import com.destroystokyo.paper.antixray.ChunkPacketBlockController;
-import net.minecraft.server.v1_16_R3.BiomeBase;
-import net.minecraft.server.v1_16_R3.BiomeStorage;
 import net.minecraft.server.v1_16_R3.Block;
 import net.minecraft.server.v1_16_R3.BlockPosition;
 import net.minecraft.server.v1_16_R3.BlockPropertySlabType;
@@ -33,12 +35,11 @@ import net.minecraft.server.v1_16_R3.EnumSkyBlock;
 import net.minecraft.server.v1_16_R3.IBlockData;
 import net.minecraft.server.v1_16_R3.IBlockState;
 import net.minecraft.server.v1_16_R3.IChatBaseComponent;
-import net.minecraft.server.v1_16_R3.IRegistry;
 import net.minecraft.server.v1_16_R3.LightEngine;
+import net.minecraft.server.v1_16_R3.MobSpawnerAbstract;
 import net.minecraft.server.v1_16_R3.NBTTagCompound;
 import net.minecraft.server.v1_16_R3.PacketPlayOutBlockChange;
 import net.minecraft.server.v1_16_R3.PacketPlayOutWorldBorder;
-import net.minecraft.server.v1_16_R3.Registry;
 import net.minecraft.server.v1_16_R3.SoundCategory;
 import net.minecraft.server.v1_16_R3.SoundEffectType;
 import net.minecraft.server.v1_16_R3.TagsBlock;
@@ -52,7 +53,6 @@ import org.bukkit.Bukkit;
 import org.bukkit.ChunkSnapshot;
 import org.bukkit.Location;
 import org.bukkit.Material;
-import org.bukkit.block.Biome;
 import org.bukkit.block.CreatureSpawner;
 import org.bukkit.block.data.Waterlogged;
 import org.bukkit.craftbukkit.v1_16_R3.CraftChunk;
@@ -65,25 +65,28 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.block.SignChangeEvent;
 import org.bukkit.generator.ChunkGenerator;
 
-import java.util.Arrays;
+import java.lang.reflect.Modifier;
 import java.util.List;
 import java.util.Map;
+import java.util.function.IntFunction;
 
-public final class NMSWorldImpl implements NMSWorld {
+public class NMSWorldImpl implements NMSWorld {
 
-    private static final SuperiorSkyblockPlugin plugin = SuperiorSkyblockPlugin.getPlugin();
-
-    private static final ReflectField<BiomeBase[]> BIOME_BASE_ARRAY = new ReflectField<>(
-            BiomeStorage.class, BiomeBase[].class, "h");
-    private static final ReflectField<Registry<BiomeBase>> BIOME_REGISTRY = new ReflectField<>(
-            BiomeStorage.class, Registry.class, "registry", "g");
-    private static final ReflectField<BiomeStorage> BIOME_STORAGE = new ReflectField<>(
-            "org.bukkit.craftbukkit.VERSION.generator.CustomChunkGenerator$CustomBiomeGrid", BiomeStorage.class, "biome");
     private static final ReflectMethod<Object> LINES_SIGN_CHANGE_EVENT = new ReflectMethod<>(SignChangeEvent.class, "lines");
     private static final ReflectMethod<Float> SOUND_VOLUME = new ReflectMethod<>(SoundEffectType.class, "a");
     private static final ReflectMethod<Float> SOUND_PITCH = new ReflectMethod<>(SoundEffectType.class, "b");
     private static final ReflectField<Object> CHUNK_PACKET_BLOCK_CONTROLLER = new ReflectField<>(World.class,
             Object.class, "chunkPacketBlockController").removeFinal();
+    private static final ReflectField<MobSpawnerAbstract> MOB_SPAWNER_ABSTRACT = new ReflectField<MobSpawnerAbstract>(
+            TileEntityMobSpawner.class, MobSpawnerAbstract.class, Modifier.PRIVATE | Modifier.FINAL, 1).removeFinal();
+
+    private final SuperiorSkyblockPlugin plugin;
+    private final Singleton<SignsListener> signsListener;
+
+    public NMSWorldImpl(SuperiorSkyblockPlugin plugin) {
+        this.plugin = plugin;
+        this.signsListener = plugin.getListener(SignsListener.class);
+    }
 
     @Override
     public Key getBlockKey(ChunkSnapshot chunkSnapshot, int x, int y, int z) {
@@ -98,24 +101,31 @@ public final class NMSWorldImpl implements NMSWorld {
                 (chunkSnapshot.getZ() << 4) + z
         );
 
-        return Key.of(Key.of(type, data), location);
+        return KeyImpl.of(KeyImpl.of(type, data), location);
     }
 
     @Override
-    public int getSpawnerDelay(CreatureSpawner creatureSpawner) {
+    public void listenSpawner(CreatureSpawner creatureSpawner, IntFunction<Integer> delayChangeCallback) {
         Location location = creatureSpawner.getLocation();
-        BlockPosition blockPosition = new BlockPosition(location.getBlockX(), location.getBlockY(), location.getBlockZ());
-        TileEntityMobSpawner mobSpawner = (TileEntityMobSpawner) ((CraftWorld) location.getWorld()).getHandle().getTileEntity(blockPosition);
-        return mobSpawner == null ? 0 : mobSpawner.getSpawner().spawnDelay;
-    }
+        org.bukkit.World world = location.getWorld();
 
-    @Override
-    public void setSpawnerDelay(CreatureSpawner creatureSpawner, int spawnDelay) {
-        Location location = creatureSpawner.getLocation();
+        if (world == null)
+            return;
+
+        WorldServer worldServer = ((CraftWorld) world).getHandle();
         BlockPosition blockPosition = new BlockPosition(location.getBlockX(), location.getBlockY(), location.getBlockZ());
-        TileEntityMobSpawner mobSpawner = (TileEntityMobSpawner) ((CraftWorld) location.getWorld()).getHandle().getTileEntity(blockPosition);
-        if (mobSpawner != null)
-            mobSpawner.getSpawner().spawnDelay = spawnDelay;
+        TileEntity mobSpawner = worldServer.getTileEntity(blockPosition);
+
+        if (!(mobSpawner instanceof TileEntityMobSpawner))
+            return;
+
+        MobSpawnerAbstract mobSpawnerAbstract = ((TileEntityMobSpawner) mobSpawner).getSpawner();
+
+        if (!(mobSpawnerAbstract instanceof MobSpawnerAbstractNotifier)) {
+            MobSpawnerAbstractNotifier mobSpawnerAbstractNotifier = new MobSpawnerAbstractNotifier(mobSpawnerAbstract, delayChangeCallback);
+            MOB_SPAWNER_ABSTRACT.set(mobSpawner, mobSpawnerAbstractNotifier);
+            mobSpawnerAbstractNotifier.updateDelay();
+        }
     }
 
     @Override
@@ -140,6 +150,8 @@ public final class NMSWorldImpl implements NMSWorld {
                 worldBorder = worldServer.getWorldBorder();
             } else {
                 worldBorder = new WorldBorder();
+
+                worldBorder.setWarningDistance(0);
 
                 worldBorder.world = worldServer;
                 worldBorder.setSize((island.getIslandSize() * 2) + 1);
@@ -167,29 +179,16 @@ public final class NMSWorldImpl implements NMSWorld {
     }
 
     @Override
-    public void setBiome(ChunkGenerator.BiomeGrid biomeGrid, Biome biome) {
-        BiomeStorage biomeStorage = BIOME_STORAGE.get(biomeGrid);
-        BiomeBase[] biomeBases = BIOME_BASE_ARRAY.get(biomeStorage);
-
-        BiomeBase biomeBase = CraftBlock.biomeToBiomeBase((IRegistry<BiomeBase>) BIOME_REGISTRY.get(biomeStorage), biome);
-
-        if (biomeBases == null)
-            return;
-
-        Arrays.fill(biomeBases, biomeBase);
-    }
-
-    @Override
     public Object getBlockData(org.bukkit.block.Block block) {
         return block.getBlockData();
     }
 
     @Override
-    public void setBlocks(org.bukkit.Chunk bukkitChunk, List<BlockData> blockDataList) {
+    public void setBlocks(org.bukkit.Chunk bukkitChunk, List<SchematicBlock> blockDataList) {
         Chunk chunk = ((CraftChunk) bukkitChunk).getHandle();
-        for (BlockData blockData : blockDataList) {
+        for (SchematicBlock blockData : blockDataList) {
             NMSUtils.setBlock(chunk, new BlockPosition(blockData.getX(), blockData.getY(), blockData.getZ()),
-                    blockData.getCombinedId(), blockData.getStatesTag(), blockData.getClonedTileEntity());
+                    blockData.getCombinedId(), blockData.getStatesTag(), blockData.getTileEntityData());
         }
     }
 
@@ -269,7 +268,7 @@ public final class NMSWorldImpl implements NMSWorld {
 
     @Override
     public boolean isWaterLogged(org.bukkit.block.Block block) {
-        if (block.getType().name().contains("WATER"))
+        if (Materials.isWater(block.getType()))
             return true;
 
         org.bukkit.block.data.BlockData blockData = block.getBlockData();
@@ -302,11 +301,11 @@ public final class NMSWorldImpl implements NMSWorld {
             System.arraycopy(CraftSign.revertComponents(tileEntitySign.lines), 0, lines, 0, lines.length);
             String[] strippedLines = new String[4];
             for (int i = 0; i < 4; i++)
-                strippedLines[i] = StringUtils.stripColors(lines[i]);
+                strippedLines[i] = Formatters.STRIP_COLOR_FORMATTER.format(lines[i]);
 
             IChatBaseComponent[] newLines;
 
-            if (BlocksLogic.handleSignPlace(island.getOwner(), island, location, strippedLines, false))
+            if (signsListener.get().shouldReplaceSignLines(island.getOwner(), island, location, strippedLines, false))
                 newLines = CraftSign.sanitizeLines(strippedLines);
             else
                 newLines = CraftSign.sanitizeLines(lines);

@@ -3,28 +3,26 @@ package com.bgsoftware.superiorskyblock.module.upgrades.type;
 import com.bgsoftware.superiorskyblock.SuperiorSkyblockPlugin;
 import com.bgsoftware.superiorskyblock.api.island.Island;
 import com.bgsoftware.superiorskyblock.commands.ISuperiorCommand;
+import com.bgsoftware.superiorskyblock.core.Materials;
+import com.bgsoftware.superiorskyblock.core.threads.BukkitExecutor;
 import com.bgsoftware.superiorskyblock.module.upgrades.commands.CmdAdminAddSpawnerRates;
 import com.bgsoftware.superiorskyblock.module.upgrades.commands.CmdAdminSetSpawnerRates;
-import com.bgsoftware.superiorskyblock.threads.Executor;
+import org.bukkit.block.BlockState;
 import org.bukkit.block.CreatureSpawner;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
-import org.bukkit.event.entity.SpawnerSpawnEvent;
+import org.bukkit.event.block.BlockPlaceEvent;
+import org.bukkit.event.world.ChunkLoadEvent;
 
-import javax.annotation.Nullable;
+import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
-import java.util.UUID;
 
-public final class UpgradeTypeSpawnerRates implements IUpgradeType {
+public class UpgradeTypeSpawnerRates implements IUpgradeType {
 
     private static final List<ISuperiorCommand> commands = Arrays.asList(new CmdAdminAddSpawnerRates(),
             new CmdAdminSetSpawnerRates());
-
-    private final Set<UUID> alreadyTrackedSpawning = new HashSet<>();
 
     private final SuperiorSkyblockPlugin plugin;
 
@@ -42,35 +40,60 @@ public final class UpgradeTypeSpawnerRates implements IUpgradeType {
         return commands;
     }
 
-    public void handleSpawnerSpawn(@Nullable CreatureSpawner creatureSpawner) {
-        if (creatureSpawner == null || creatureSpawner.getLocation() == null)
-            return;
-
+    public void handleSpawnerPlace(CreatureSpawner creatureSpawner) {
         Island island = plugin.getGrid().getIslandAt(creatureSpawner.getLocation());
 
         if (island == null)
             return;
 
-        double spawnerRatesMultiplier = island.getSpawnerRatesMultiplier();
+        // We want to replace the spawner in a delay so other plugins that might change the spawner will be taken in action as well.
+        BukkitExecutor.sync(() -> plugin.getNMSWorld().listenSpawner(creatureSpawner,
+                spawnDelay -> calculateNewSpawnerDelay(island, spawnDelay)), 20L);
+    }
 
-        if (spawnerRatesMultiplier > 1 && alreadyTrackedSpawning.add(island.getOwner().getUniqueId())) {
-            Executor.sync(() -> {
-                int spawnDelay = plugin.getNMSWorld().getSpawnerDelay(creatureSpawner);
-                if (spawnDelay > 0) {
-                    plugin.getNMSWorld().setSpawnerDelay(creatureSpawner,
-                            (int) Math.round(spawnDelay / spawnerRatesMultiplier));
-                    Executor.sync(() -> alreadyTrackedSpawning.remove(island.getOwner().getUniqueId()), 10L);
-                }
-            }, 5L);
+    private int calculateNewSpawnerDelay(Island island, int spawnDelay) {
+        double spawnerRatesMultiplier = island.getSpawnerRatesMultiplier();
+        if (spawnerRatesMultiplier > 1) {
+            return (int) Math.round(spawnDelay / spawnerRatesMultiplier);
+        } else {
+            return spawnDelay;
         }
     }
 
-    private final class SpawnerRatesListener implements Listener {
+    private class SpawnerRatesListener implements Listener {
 
+        @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+        public void onSpawnerPlace(BlockPlaceEvent e) {
+            if (e.getBlock().getType() == Materials.SPAWNER.toBukkitType())
+                handleSpawnerPlace((CreatureSpawner) e.getBlock().getState());
+        }
 
-        @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
-        public void onSpawn(SpawnerSpawnEvent e) {
-            handleSpawnerSpawn(e.getSpawner());
+        @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+        public void onChunkLoad(ChunkLoadEvent e) {
+            Island island = plugin.getGrid().getIslandAt(e.getChunk());
+
+            if (island == null)
+                return;
+
+            List<CreatureSpawner> creatureSpawners = new ArrayList<>();
+
+            for (BlockState tileEntity : e.getChunk().getTileEntities()) {
+                if (tileEntity instanceof CreatureSpawner) {
+                    creatureSpawners.add((CreatureSpawner) tileEntity);
+                }
+            }
+
+            if (!creatureSpawners.isEmpty()) {
+                // We want to replace the spawner in a delay so other plugins that might change the spawner will be taken in action as well.
+                BukkitExecutor.sync(() -> {
+                    if (e.getChunk().isLoaded()) {
+                        creatureSpawners.forEach(creatureSpawner -> {
+                            plugin.getNMSWorld().listenSpawner(creatureSpawner, spawnDelay -> calculateNewSpawnerDelay(island, spawnDelay));
+                        });
+                    }
+                }, 20L);
+            }
+
         }
 
     }

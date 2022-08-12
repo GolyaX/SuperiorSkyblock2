@@ -4,18 +4,19 @@ import com.bgsoftware.common.config.CommentedConfiguration;
 import com.bgsoftware.superiorskyblock.SuperiorSkyblockPlugin;
 import com.bgsoftware.superiorskyblock.api.commands.SuperiorCommand;
 import com.bgsoftware.superiorskyblock.api.missions.Mission;
-import com.bgsoftware.superiorskyblock.api.objects.Pair;
-import com.bgsoftware.superiorskyblock.menu.file.MenuPatternSlots;
-import com.bgsoftware.superiorskyblock.menu.impl.MenuMembers;
-import com.bgsoftware.superiorskyblock.menu.pattern.impl.RegularMenuPattern;
+import com.bgsoftware.superiorskyblock.core.debug.PluginDebugger;
+import com.bgsoftware.superiorskyblock.core.io.Files;
+import com.bgsoftware.superiorskyblock.core.io.MenuParser;
+import com.bgsoftware.superiorskyblock.core.io.Resources;
+import com.bgsoftware.superiorskyblock.core.menu.MenuParseResult;
+import com.bgsoftware.superiorskyblock.core.menu.MenuPatternSlots;
+import com.bgsoftware.superiorskyblock.core.menu.impl.MenuMembers;
+import com.bgsoftware.superiorskyblock.core.menu.pattern.impl.RegularMenuPattern;
 import com.bgsoftware.superiorskyblock.mission.SMissionCategory;
 import com.bgsoftware.superiorskyblock.module.BuiltinModule;
 import com.bgsoftware.superiorskyblock.module.missions.commands.CmdAdminMission;
 import com.bgsoftware.superiorskyblock.module.missions.commands.CmdMission;
 import com.bgsoftware.superiorskyblock.module.missions.commands.CmdMissions;
-import com.bgsoftware.superiorskyblock.utils.FileUtils;
-import com.bgsoftware.superiorskyblock.threads.Executor;
-import com.bgsoftware.superiorskyblock.utils.debug.PluginDebugger;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.InvalidConfigurationException;
 import org.bukkit.configuration.file.YamlConfiguration;
@@ -23,17 +24,18 @@ import org.bukkit.event.Listener;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
-public final class MissionsModule extends BuiltinModule {
+public class MissionsModule extends BuiltinModule {
 
     private static final int MAX_MISSIONS_NAME_LENGTH = 255;
+
+    private final List<Mission<?>> missionsToLoad = new LinkedList<>();
 
     private boolean enabled = true;
 
@@ -42,48 +44,48 @@ public final class MissionsModule extends BuiltinModule {
     }
 
     private void generateDefaultFiles() {
-        FileUtils.copyResource("modules/missions/BlocksMissions");
-        FileUtils.copyResource("modules/missions/BrewingMissions");
-        FileUtils.copyResource("modules/missions/CraftingMissions");
-        FileUtils.copyResource("modules/missions/EnchantingMissions");
-        FileUtils.copyResource("modules/missions/FarmingMissions");
-        FileUtils.copyResource("modules/missions/FishingMissions");
-        FileUtils.copyResource("modules/missions/IslandMissions");
-        FileUtils.copyResource("modules/missions/ItemsMissions");
-        FileUtils.copyResource("modules/missions/KillsMissions");
-        FileUtils.copyResource("modules/missions/StatisticsMissions");
+        Resources.copyResource("modules/missions/BlocksMissions");
+        Resources.copyResource("modules/missions/BrewingMissions");
+        Resources.copyResource("modules/missions/CraftingMissions");
+        Resources.copyResource("modules/missions/EnchantingMissions");
+        Resources.copyResource("modules/missions/FarmingMissions");
+        Resources.copyResource("modules/missions/FishingMissions");
+        Resources.copyResource("modules/missions/IslandMissions");
+        Resources.copyResource("modules/missions/ItemsMissions");
+        Resources.copyResource("modules/missions/KillsMissions");
+        Resources.copyResource("modules/missions/StatisticsMissions");
 
-        File categoriesFolder = new File(getDataFolder(), "categories");
+        File categoriesFolder = new File(getModuleFolder(), "categories");
 
         if ((!categoriesFolder.exists() || !categoriesFolder.isDirectory()) && categoriesFolder.mkdirs()) {
-            FileUtils.saveResource("modules/missions/categories/farmer/farmer_1.yml");
-            FileUtils.saveResource("modules/missions/categories/farmer/farmer_2.yml");
-            FileUtils.saveResource("modules/missions/categories/farmer/farmer_3.yml");
-            FileUtils.saveResource("modules/missions/categories/farmer/farmer_4.yml");
-            FileUtils.saveResource("modules/missions/categories/farmer/farmer_5.yml");
-            FileUtils.saveResource("modules/missions/categories/miner/miner_1.yml");
-            FileUtils.saveResource("modules/missions/categories/miner/miner_2.yml");
-            FileUtils.saveResource("modules/missions/categories/miner/miner_3.yml");
-            FileUtils.saveResource("modules/missions/categories/miner/miner_4.yml");
-            FileUtils.saveResource("modules/missions/categories/miner/miner_5.yml");
-            FileUtils.saveResource("modules/missions/categories/slayer/slayer_1.yml");
-            FileUtils.saveResource("modules/missions/categories/slayer/slayer_2.yml");
-            FileUtils.saveResource("modules/missions/categories/slayer/slayer_3.yml");
-            FileUtils.saveResource("modules/missions/categories/slayer/slayer_4.yml");
-            FileUtils.saveResource("modules/missions/categories/fisherman/fisherman_1.yml");
-            FileUtils.saveResource("modules/missions/categories/fisherman/fisherman_2.yml");
-            FileUtils.saveResource("modules/missions/categories/fisherman/fisherman_3.yml");
-            FileUtils.saveResource("modules/missions/categories/explorer/explorer_1.yml");
-            FileUtils.saveResource("modules/missions/categories/explorer/explorer_2.yml");
+            Resources.saveResource("modules/missions/categories/farmer/farmer_1.yml");
+            Resources.saveResource("modules/missions/categories/farmer/farmer_2.yml");
+            Resources.saveResource("modules/missions/categories/farmer/farmer_3.yml");
+            Resources.saveResource("modules/missions/categories/farmer/farmer_4.yml");
+            Resources.saveResource("modules/missions/categories/farmer/farmer_5.yml");
+            Resources.saveResource("modules/missions/categories/miner/miner_1.yml");
+            Resources.saveResource("modules/missions/categories/miner/miner_2.yml");
+            Resources.saveResource("modules/missions/categories/miner/miner_3.yml");
+            Resources.saveResource("modules/missions/categories/miner/miner_4.yml");
+            Resources.saveResource("modules/missions/categories/miner/miner_5.yml");
+            Resources.saveResource("modules/missions/categories/slayer/slayer_1.yml");
+            Resources.saveResource("modules/missions/categories/slayer/slayer_2.yml");
+            Resources.saveResource("modules/missions/categories/slayer/slayer_3.yml");
+            Resources.saveResource("modules/missions/categories/slayer/slayer_4.yml");
+            Resources.saveResource("modules/missions/categories/fisherman/fisherman_1.yml");
+            Resources.saveResource("modules/missions/categories/fisherman/fisherman_2.yml");
+            Resources.saveResource("modules/missions/categories/fisherman/fisherman_3.yml");
+            Resources.saveResource("modules/missions/categories/explorer/explorer_1.yml");
+            Resources.saveResource("modules/missions/categories/explorer/explorer_2.yml");
         }
     }
 
     @Override
     protected void onPluginInit(SuperiorSkyblockPlugin plugin) {
-        File file = new File(getDataFolder(), "config.yml");
+        File file = new File(getModuleFolder(), "config.yml");
 
         if (!file.exists())
-            FileUtils.saveResource("modules/missions/config.yml");
+            Resources.saveResource("modules/missions/config.yml");
 
         config = CommentedConfiguration.loadConfiguration(file);
 
@@ -92,7 +94,7 @@ public final class MissionsModule extends BuiltinModule {
         generateDefaultFiles();
 
         try {
-            config.syncWithConfig(file, FileUtils.getResource("modules/missions/config.yml"), getIgnoredSections());
+            config.syncWithConfig(file, Resources.getResource("modules/missions/config.yml"), getIgnoredSections());
         } catch (Exception ex) {
             ex.printStackTrace();
             PluginDebugger.debug(ex);
@@ -106,8 +108,6 @@ public final class MissionsModule extends BuiltinModule {
         if (!enabled)
             return;
 
-        List<Mission<?>> missionsToLoad = new ArrayList<>();
-
         ConfigurationSection categoriesSection = config.getConfigurationSection("categories");
 
         if (categoriesSection != null) {
@@ -117,7 +117,7 @@ public final class MissionsModule extends BuiltinModule {
                 if (categorySection == null)
                     continue;
 
-                List<Mission<?>> categoryMissions = new ArrayList<>();
+                List<Mission<?>> categoryMissions = new LinkedList<>();
 
                 if (!canLoadCategory(plugin, categoryName, categoryMissions))
                     continue;
@@ -131,18 +131,20 @@ public final class MissionsModule extends BuiltinModule {
                 missionsToLoad.addAll(categoryMissions);
             }
         }
-
-        if (!missionsToLoad.isEmpty()) {
-            // Should be running in 1-tick delay so players and their islands will be loaded
-            // before loading data of missions, as they depend on this data.
-            Executor.sync(() -> plugin.getMissions().loadMissionsData(missionsToLoad), 1L);
-        }
     }
 
     @Override
     public void onDisable(SuperiorSkyblockPlugin plugin) {
         if (enabled)
             plugin.getMissions().saveMissionsData();
+    }
+
+    @Override
+    public void loadData(SuperiorSkyblockPlugin plugin) {
+        if (!missionsToLoad.isEmpty()) {
+            plugin.getMissions().loadMissionsData(missionsToLoad);
+            missionsToLoad.clear();
+        }
     }
 
     @Override
@@ -176,7 +178,7 @@ public final class MissionsModule extends BuiltinModule {
     }
 
     private boolean canLoadCategory(SuperiorSkyblockPlugin plugin, String categoryName, List<Mission<?>> categoryMissions) {
-        File categoryFolder = new File(getDataFolder(), "categories/" + categoryName);
+        File categoryFolder = new File(getModuleFolder(), "categories/" + categoryName);
 
         if (!categoryFolder.exists()) {
             SuperiorSkyblockPlugin.log("&cThe directory of the mission category " + categoryName + " doesn't exist, skipping...");
@@ -222,7 +224,7 @@ public final class MissionsModule extends BuiltinModule {
 
             ConfigurationSection missionSection = missionConfigFile.getConfigurationSection("");
 
-            Mission<?> mission = plugin.getMissions().loadMission(missionName, getDataFolder(), missionSection);
+            Mission<?> mission = plugin.getMissions().loadMission(missionName, getModuleFolder(), missionSection);
 
             if (mission != null) {
                 categoryMissions.add(mission);
@@ -250,14 +252,14 @@ public final class MissionsModule extends BuiltinModule {
 
         ConfigurationSection categoriesSection = config.createSection("categories");
 
-        Pair<MenuPatternSlots, CommentedConfiguration> menuLoadResult = FileUtils.loadMenu(
-                new RegularMenuPattern.Builder<MenuMembers>(), "missions.yml", null);
+        MenuParseResult menuLoadResult = MenuParser.loadMenu(new RegularMenuPattern.Builder<MenuMembers>(),
+                "missions.yml", null);
 
         if (menuLoadResult == null)
             return;
 
-        MenuPatternSlots menuPatternSlots = menuLoadResult.getKey();
-        CommentedConfiguration missionsMenuConfig = menuLoadResult.getValue();
+        MenuPatternSlots menuPatternSlots = menuLoadResult.getPatternSlots();
+        CommentedConfiguration missionsMenuConfig = menuLoadResult.getConfig();
 
         int islandsCategorySlot = menuPatternSlots.getSlot(missionsMenuConfig.getString("island-missions", ""));
         if (islandsCategorySlot != -1) {
@@ -271,8 +273,8 @@ public final class MissionsModule extends BuiltinModule {
             categoriesSection.set("players.slot", playersCategorySlot);
         }
 
-        File islandsCategoryFile = new File(getDataFolder(), "categories/islands");
-        File playersCategoryFile = new File(getDataFolder(), "categories/players");
+        File islandsCategoryFile = new File(getModuleFolder(), "categories/islands");
+        File playersCategoryFile = new File(getModuleFolder(), "categories/players");
 
         islandsCategoryFile.mkdirs();
         playersCategoryFile.mkdirs();
@@ -343,15 +345,15 @@ public final class MissionsModule extends BuiltinModule {
             if (oldMissionsFiles != null) {
                 for (File jarFile : oldMissionsFiles) {
                     if (jarFile.getName().endsWith(".jar"))
-                        jarFile.renameTo(new File(getDataFolder(), jarFile.getName()));
+                        jarFile.renameTo(new File(getModuleFolder(), jarFile.getName()));
                 }
             }
 
             File oldDataFile = new File(oldMissionsFolder, "_data.yml");
             if (oldDataFile.exists())
-                oldDataFile.renameTo(new File(getDataFolder(), "_data.yml"));
+                oldDataFile.renameTo(new File(getModuleFolder(), "_data.yml"));
 
-            FileUtils.deleteDirectory(oldMissionsFolder);
+            Files.deleteDirectory(oldMissionsFolder);
         }
     }
 
@@ -360,7 +362,7 @@ public final class MissionsModule extends BuiltinModule {
         File newMissionsCategoryMenuFile = new File(plugin.getDataFolder(), "menus/missions-category.yml");
 
         try {
-            Files.copy(Paths.get(oldMissionsMenuFile.toURI()), Paths.get(newMissionsCategoryMenuFile.toURI()));
+            java.nio.file.Files.copy(Paths.get(oldMissionsMenuFile.toURI()), Paths.get(newMissionsCategoryMenuFile.toURI()));
         } catch (IOException error) {
             SuperiorSkyblockPlugin.log("&cError occurred while copying old missions-menu to the new format, skipping...");
             PluginDebugger.debug(error);

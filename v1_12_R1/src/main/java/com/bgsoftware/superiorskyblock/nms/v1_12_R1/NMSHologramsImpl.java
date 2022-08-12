@@ -1,6 +1,6 @@
 package com.bgsoftware.superiorskyblock.nms.v1_12_R1;
 
-import com.bgsoftware.superiorskyblock.hologram.Hologram;
+import com.bgsoftware.superiorskyblock.api.service.hologram.Hologram;
 import com.bgsoftware.superiorskyblock.nms.NMSHolograms;
 import net.minecraft.server.v1_12_R1.AxisAlignedBB;
 import net.minecraft.server.v1_12_R1.DamageSource;
@@ -18,9 +18,11 @@ import org.bukkit.Location;
 import org.bukkit.craftbukkit.v1_12_R1.CraftWorld;
 import org.bukkit.craftbukkit.v1_12_R1.entity.CraftArmorStand;
 import org.bukkit.craftbukkit.v1_12_R1.entity.CraftEntity;
+import org.bukkit.entity.ArmorStand;
+import org.bukkit.entity.Entity;
 
 @SuppressWarnings("unused")
-public final class NMSHologramsImpl implements NMSHolograms {
+public class NMSHologramsImpl implements NMSHolograms {
 
     @Override
     public Hologram createHologram(Location location) {
@@ -30,7 +32,12 @@ public final class NMSHologramsImpl implements NMSHolograms {
         return entityHologram;
     }
 
-    private static final class EntityHologram extends EntityArmorStand implements Hologram {
+    @Override
+    public boolean isHologram(Entity entity) {
+        return ((CraftEntity) entity).getHandle() instanceof Hologram;
+    }
+
+    private static class EntityHologram extends EntityArmorStand implements Hologram {
 
         EntityHologram(World world, double x, double y, double z) {
             super(world, x, y, z);
@@ -53,6 +60,11 @@ public final class NMSHologramsImpl implements NMSHolograms {
         @Override
         public void removeHologram() {
             super.die();
+        }
+
+        @Override
+        public ArmorStand getHandle() {
+            return this.getBukkitEntity();
         }
 
         @Override
@@ -112,11 +124,11 @@ public final class NMSHologramsImpl implements NMSHolograms {
         }
 
         @Override
-        public CraftEntity getBukkitEntity() {
+        public CraftArmorStand getBukkitEntity() {
             if (super.bukkitEntity == null) {
                 super.bukkitEntity = new CraftArmorStand(super.world.getServer(), this);
             }
-            return super.bukkitEntity;
+            return (CraftArmorStand) super.bukkitEntity;
         }
 
         @Override

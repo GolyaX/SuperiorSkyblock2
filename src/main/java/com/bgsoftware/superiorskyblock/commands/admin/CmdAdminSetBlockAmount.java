@@ -1,21 +1,22 @@
 package com.bgsoftware.superiorskyblock.commands.admin;
 
-import com.bgsoftware.superiorskyblock.lang.Message;
 import com.bgsoftware.superiorskyblock.SuperiorSkyblockPlugin;
-import com.bgsoftware.superiorskyblock.api.objects.Pair;
-import com.bgsoftware.superiorskyblock.commands.CommandArguments;
 import com.bgsoftware.superiorskyblock.commands.CommandTabCompletes;
 import com.bgsoftware.superiorskyblock.commands.ISuperiorCommand;
+import com.bgsoftware.superiorskyblock.commands.arguments.CommandArguments;
+import com.bgsoftware.superiorskyblock.commands.arguments.NumberArgument;
+import com.bgsoftware.superiorskyblock.core.messages.Message;
 import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 
-import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.LinkedList;
 import java.util.List;
 
-public final class CmdAdminSetBlockAmount implements ISuperiorCommand {
+public class CmdAdminSetBlockAmount implements ISuperiorCommand {
 
     @Override
     public List<String> getAliases() {
@@ -66,12 +67,12 @@ public final class CmdAdminSetBlockAmount implements ISuperiorCommand {
         if (location == null)
             return;
 
-        Pair<Integer, Boolean> arguments = CommandArguments.getAmount(sender, args[6]);
+        NumberArgument<Integer> arguments = CommandArguments.getAmount(sender, args[6]);
 
-        if (!arguments.getValue())
+        if (!arguments.isSucceed())
             return;
 
-        int amount = arguments.getKey();
+        int amount = arguments.getNumber();
 
         plugin.getStackedBlocks().setStackedBlock(location.getBlock(), amount);
 
@@ -81,7 +82,7 @@ public final class CmdAdminSetBlockAmount implements ISuperiorCommand {
 
     @Override
     public List<String> tabComplete(SuperiorSkyblockPlugin plugin, CommandSender sender, String[] args) {
-        List<String> list = new ArrayList<>();
+        List<String> list = new LinkedList<>();
 
         if (args.length == 3) {
             list = CommandTabCompletes.getWorlds(args[2]);
@@ -100,6 +101,6 @@ public final class CmdAdminSetBlockAmount implements ISuperiorCommand {
             }
         }
 
-        return list;
+        return Collections.unmodifiableList(list);
     }
 }

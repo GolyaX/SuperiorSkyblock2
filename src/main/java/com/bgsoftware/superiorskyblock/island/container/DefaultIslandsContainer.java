@@ -4,34 +4,38 @@ import com.bgsoftware.superiorskyblock.SuperiorSkyblockPlugin;
 import com.bgsoftware.superiorskyblock.api.island.Island;
 import com.bgsoftware.superiorskyblock.api.island.SortingType;
 import com.bgsoftware.superiorskyblock.api.island.container.IslandsContainer;
-import com.bgsoftware.superiorskyblock.island.IslandPosition;
-import com.bgsoftware.superiorskyblock.structure.SortedRegistry;
+import com.bgsoftware.superiorskyblock.core.IslandPosition;
+import com.bgsoftware.superiorskyblock.core.SequentialListBuilder;
+import com.bgsoftware.superiorskyblock.core.collections.EnumerateSet;
+import com.bgsoftware.superiorskyblock.core.threads.BukkitExecutor;
+import com.bgsoftware.superiorskyblock.core.threads.Synchronized;
+import com.google.common.base.Preconditions;
+import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.World;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
-import java.util.function.Predicate;
 
-public final class DefaultIslandsContainer implements IslandsContainer {
+public class DefaultIslandsContainer implements IslandsContainer {
 
-    private static final Predicate<Island> ISLANDS_PREDICATE = island -> !island.isIgnored();
-
-    private final SortedRegistry<UUID, Island, SortingType> sortedIslands = new SortedRegistry<>();
     private final Map<IslandPosition, Island> islandsByPositions = new ConcurrentHashMap<>();
     private final Map<UUID, Island> islandsByUUID = new ConcurrentHashMap<>();
+
+    private final Map<SortingType, Synchronized<List<Island>>> sortedIslands = new ConcurrentHashMap<>();
+
+    private final EnumerateSet<SortingType> notifiedValues = new EnumerateSet<>(SortingType.values());
 
     private final SuperiorSkyblockPlugin plugin;
 
     public DefaultIslandsContainer(SuperiorSkyblockPlugin plugin) {
         this.plugin = plugin;
-        SortingType.values().forEach(sortingType -> addSortingType(sortingType, false));
+
     }
 
     @Override
@@ -49,16 +53,22 @@ public final class DefaultIslandsContainer implements IslandsContainer {
         }
 
         this.islandsByUUID.put(island.getUniqueId(), island);
-        this.sortedIslands.put(island.getOwner().getUniqueId(), island);
+
+        sortedIslands.values().forEach(sortedIslands -> {
+            sortedIslands.write(_sortedIslands -> _sortedIslands.add(island));
+        });
     }
 
     @Override
     public void removeIsland(Island island) {
         Location islandLocation = island.getCenter(plugin.getSettings().getWorlds().getDefaultWorld());
 
-        sortedIslands.remove(island.getOwner().getUniqueId());
         islandsByUUID.remove(island.getUniqueId());
         islandsByPositions.remove(IslandPosition.of(islandLocation));
+
+        sortedIslands.values().forEach(sortedIslands -> {
+            sortedIslands.write(_sortedIslands -> _sortedIslands.remove(island));
+        });
 
         if (plugin.getProviders().hasCustomWorldsSupport()) {
             runWithCustomWorld(islandLocation, island, World.Environment.NORMAL,
@@ -78,19 +88,19 @@ public final class DefaultIslandsContainer implements IslandsContainer {
 
     @Nullable
     @Override
-    public Island getIslandByLeader(UUID uuid) {
-        return this.sortedIslands.get(uuid);
-    }
-
-    @Nullable
-    @Override
     public Island getIslandAtPosition(int position, SortingType sortingType) {
-        return position < 0 || position > getIslandsAmount() ? null : this.sortedIslands.get(position, sortingType);
+        ensureSortingType(sortingType);
+        return this.sortedIslands.get(sortingType).readAndGet(sortedIslands -> {
+            return position < 0 || position >= sortedIslands.size() ? null : sortedIslands.get(position);
+        });
     }
 
     @Override
     public int getIslandPosition(Island island, SortingType sortingType) {
-        return this.sortedIslands.indexOf(island, sortingType);
+        ensureSortingType(sortingType);
+        return this.sortedIslands.get(sortingType).readAndGet(sortedIslands -> {
+            return sortedIslands.indexOf(island);
+        });
     }
 
     @Override
@@ -106,30 +116,50 @@ public final class DefaultIslandsContainer implements IslandsContainer {
     }
 
     @Override
-    public void transferIsland(UUID oldOwner, UUID newOwner) {
-        Island island = sortedIslands.get(oldOwner);
-        sortedIslands.remove(oldOwner);
-        sortedIslands.put(newOwner, island);
+    public void sortIslands(SortingType sortingType, Runnable onFinish) {
+        this.sortIslands(sortingType, false, onFinish);
     }
 
     @Override
-    public void sortIslands(SortingType sortingType, Runnable onFinish) {
-        this.sortedIslands.sort(sortingType, ISLANDS_PREDICATE, onFinish);
+    public void sortIslands(SortingType sortingType, boolean forceSort, Runnable onFinish) {
+        ensureSortingType(sortingType);
+
+        Synchronized<List<Island>> sortedIslands = this.sortedIslands.get(sortingType);
+
+        if (!forceSort && (sortedIslands.readAndGet(List::size) <= 1 || !notifiedValues.remove(sortingType))) {
+            if (onFinish != null)
+                onFinish.run();
+            return;
+        }
+
+        if (Bukkit.isPrimaryThread()) {
+            BukkitExecutor.async(() -> sortIslandsInternal(sortingType, onFinish));
+        } else {
+            sortIslandsInternal(sortingType, onFinish);
+        }
+    }
+
+    @Override
+    public void notifyChange(SortingType sortingType, Island island) {
+        notifiedValues.add(sortingType);
     }
 
     @Override
     public List<Island> getSortedIslands(SortingType sortingType) {
-        return this.sortedIslands.getIslands(sortingType);
+        ensureSortingType(sortingType);
+        return this.sortedIslands.get(sortingType).readAndGet(sortedIslands ->
+                new SequentialListBuilder<Island>().build(sortedIslands));
     }
 
     @Override
     public List<Island> getIslandsUnsorted() {
-        return Collections.unmodifiableList(new ArrayList<>(this.islandsByUUID.values()));
+        return new SequentialListBuilder<Island>().build(this.islandsByUUID.values());
     }
 
     @Override
     public void addSortingType(SortingType sortingType, boolean sort) {
-        this.sortedIslands.registerSortingType(sortingType, sort, ISLANDS_PREDICATE);
+        Preconditions.checkArgument(!sortedIslands.containsKey(sortingType), "You cannot register an existing sorting type to the database.");
+        sortIslandsInternal(sortingType, null);
     }
 
     private void runWithCustomWorld(Location islandLocation, Island island, World.Environment environment, Consumer<Location> onSuccess) {
@@ -139,6 +169,22 @@ public final class DefaultIslandsContainer implements IslandsContainer {
                 onSuccess.accept(location);
         } catch (Exception ignored) {
         }
+    }
+
+    private void ensureSortingType(SortingType sortingType) {
+        Preconditions.checkState(sortedIslands.containsKey(sortingType), "The sorting-type " + sortingType + " doesn't exist in the database. Please contact author!");
+    }
+
+    private void sortIslandsInternal(SortingType sortingType, Runnable onFinish) {
+        List<Island> newIslandsList = new ArrayList<>(islandsByUUID.values());
+        newIslandsList.removeIf(Island::isIgnored);
+
+        newIslandsList.sort(sortingType);
+
+        this.sortedIslands.put(sortingType, Synchronized.of(newIslandsList));
+
+        if (onFinish != null)
+            onFinish.run();
     }
 
 }

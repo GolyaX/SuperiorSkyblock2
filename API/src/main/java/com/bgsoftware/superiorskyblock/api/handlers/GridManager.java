@@ -1,6 +1,6 @@
 package com.bgsoftware.superiorskyblock.api.handlers;
 
-import com.bgsoftware.superiorskyblock.api.data.DatabaseBridge;
+import com.bgsoftware.superiorskyblock.api.data.IDatabaseBridgeHolder;
 import com.bgsoftware.superiorskyblock.api.island.Island;
 import com.bgsoftware.superiorskyblock.api.island.IslandPreview;
 import com.bgsoftware.superiorskyblock.api.island.SortingType;
@@ -18,7 +18,7 @@ import java.math.BigDecimal;
 import java.util.List;
 import java.util.UUID;
 
-public interface GridManager {
+public interface GridManager extends IDatabaseBridgeHolder {
 
     /**
      * Create a new island.
@@ -64,6 +64,11 @@ public interface GridManager {
      *                                If null, the default one will be used.
      */
     void setIslandCreationAlgorithm(@Nullable IslandCreationAlgorithm islandCreationAlgorithm);
+
+    /**
+     * Get the currently used island creation algorithm.
+     */
+    IslandCreationAlgorithm getIslandCreationAlgorithm();
 
     /**
      * Checks if a player has an active request for creating an island.
@@ -113,8 +118,10 @@ public interface GridManager {
      *
      * @param superiorPlayer The player to check.
      * @return The island of the player. May be null.
+     * @deprecated See {@link SuperiorPlayer#getIsland()}
      */
     @Nullable
+    @Deprecated
     Island getIsland(SuperiorPlayer superiorPlayer);
 
     /**
@@ -143,8 +150,10 @@ public interface GridManager {
      *
      * @param uuid The uuid of the owner.
      * @return The island of the owner. May be null.
+     * @deprecated See {@link SuperiorPlayer#getIsland()}
      */
     @Nullable
+    @Deprecated
     Island getIsland(UUID uuid);
 
     /**
@@ -223,6 +232,7 @@ public interface GridManager {
      * @param environment The world environment.
      * @param island      The island to check.
      */
+    @Nullable
     World getIslandsWorld(Island island, World.Environment environment);
 
     /**
@@ -249,7 +259,9 @@ public interface GridManager {
      *
      * @param sortingType The sorting type to order the list by.
      * @return A list of uuids of the island owners.
+     * @deprecated See {@link #getIslands(SortingType)}
      */
+    @Deprecated
     List<UUID> getAllIslands(SortingType sortingType);
 
     /**
@@ -373,10 +385,5 @@ public interface GridManager {
      * Get the islands container.
      */
     IslandsContainer getIslandsContainer();
-
-    /**
-     * Get the database-bridge of the grid.
-     */
-    DatabaseBridge getDatabaseBridge();
 
 }

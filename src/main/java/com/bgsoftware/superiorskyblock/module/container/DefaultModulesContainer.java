@@ -2,46 +2,60 @@ package com.bgsoftware.superiorskyblock.module.container;
 
 import com.bgsoftware.superiorskyblock.SuperiorSkyblockPlugin;
 import com.bgsoftware.superiorskyblock.api.modules.PluginModule;
+import com.bgsoftware.superiorskyblock.core.SequentialListBuilder;
 import com.bgsoftware.superiorskyblock.module.ModuleData;
 import com.google.common.base.Preconditions;
 import org.bukkit.event.HandlerList;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
+import java.util.Locale;
 import java.util.Map;
 
-public final class DefaultModulesContainer implements ModulesContainer {
+public class DefaultModulesContainer implements ModulesContainer {
 
     private final Map<String, PluginModule> modulesMap = new HashMap<>();
     private final Map<PluginModule, ModuleData> modulesData = new HashMap<>();
 
     @Override
-    public void registerModule(PluginModule pluginModule, File modulesFolder, SuperiorSkyblockPlugin plugin) {
-        String moduleName = pluginModule.getName().toLowerCase();
+    public void registerModule(PluginModule pluginModule, File modulesFolder, File modulesDataFolder, SuperiorSkyblockPlugin plugin) {
+        String moduleName = pluginModule.getName().toLowerCase(Locale.ENGLISH);
 
         Preconditions.checkState(!modulesMap.containsKey(moduleName), "PluginModule with the name " + moduleName + " already exists.");
 
-        File dataFolder = new File(modulesFolder, pluginModule.getName());
+        File dataFolder = new File(modulesDataFolder, pluginModule.getName());
+        File moduleFolder = new File(modulesFolder, pluginModule.getName());
 
-        pluginModule.initModule(plugin, dataFolder);
+        try {
+            pluginModule.initModule(plugin, moduleFolder, dataFolder);
+        } catch (Throwable error) {
+            SuperiorSkyblockPlugin.log("&cAn error occurred while initializing the module " + pluginModule.getName() + ":");
+            SuperiorSkyblockPlugin.log("&cContact " + pluginModule.getAuthor() + " regarding this, this has nothing to do with the plugin.");
+            error.printStackTrace();
+            return;
+        }
 
         modulesMap.put(moduleName, pluginModule);
     }
 
     @Override
     public void unregisterModule(PluginModule pluginModule, SuperiorSkyblockPlugin plugin) {
-        String moduleName = pluginModule.getName().toLowerCase();
+        String moduleName = pluginModule.getName().toLowerCase(Locale.ENGLISH);
 
         Preconditions.checkState(modulesMap.containsKey(moduleName), "PluginModule with the name " + moduleName + " is not registered in the plugin anymore.");
 
         SuperiorSkyblockPlugin.log("&cDisabling the module " + pluginModule.getName() + "...");
 
-        pluginModule.onDisable(plugin);
+        try {
+            pluginModule.onDisable(plugin);
+        } catch (Throwable error) {
+            SuperiorSkyblockPlugin.log("&cAn error occurred while disabling the module " + pluginModule.getName() + ":");
+            SuperiorSkyblockPlugin.log("&cContact " + pluginModule.getAuthor() + " regarding this, this has nothing to do with the plugin.");
+            error.printStackTrace();
+        }
 
         ModuleData moduleData = modulesData.remove(pluginModule);
 
@@ -64,12 +78,12 @@ public final class DefaultModulesContainer implements ModulesContainer {
     @Nullable
     @Override
     public PluginModule getModule(String name) {
-        return this.modulesMap.get(name.toLowerCase());
+        return this.modulesMap.get(name.toLowerCase(Locale.ENGLISH));
     }
 
     @Override
     public Collection<PluginModule> getModules() {
-        return Collections.unmodifiableCollection(new ArrayList<>(modulesMap.values()));
+        return new SequentialListBuilder<PluginModule>().build(modulesMap.values());
     }
 
     @Override

@@ -1,20 +1,19 @@
 package com.bgsoftware.superiorskyblock.commands.player;
 
-import com.bgsoftware.superiorskyblock.lang.Message;
 import com.bgsoftware.superiorskyblock.SuperiorSkyblockPlugin;
 import com.bgsoftware.superiorskyblock.api.island.Island;
-import com.bgsoftware.superiorskyblock.api.objects.Pair;
 import com.bgsoftware.superiorskyblock.api.wrappers.SuperiorPlayer;
-import com.bgsoftware.superiorskyblock.commands.CommandArguments;
 import com.bgsoftware.superiorskyblock.commands.CommandTabCompletes;
 import com.bgsoftware.superiorskyblock.commands.ISuperiorCommand;
+import com.bgsoftware.superiorskyblock.commands.arguments.CommandArguments;
+import com.bgsoftware.superiorskyblock.commands.arguments.IslandArgument;
+import com.bgsoftware.superiorskyblock.core.messages.Message;
 import org.bukkit.command.CommandSender;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-public final class CmdRate implements ISuperiorCommand {
+public class CmdRate implements ISuperiorCommand {
 
     @Override
     public List<String> getAliases() {
@@ -55,10 +54,10 @@ public final class CmdRate implements ISuperiorCommand {
 
     @Override
     public void execute(SuperiorSkyblockPlugin plugin, CommandSender sender, String[] args) {
-        Pair<Island, SuperiorPlayer> arguments = args.length == 1 ? CommandArguments.getIslandWhereStanding(plugin, sender) :
+        IslandArgument arguments = args.length == 1 ? CommandArguments.getIslandWhereStanding(plugin, sender) :
                 CommandArguments.getIsland(plugin, sender, args[1]);
 
-        Island island = arguments.getKey();
+        Island island = arguments.getIsland();
 
         if (island == null)
             return;
@@ -85,7 +84,7 @@ public final class CmdRate implements ISuperiorCommand {
         return args.length == 2 ? CommandTabCompletes.getOnlinePlayersWithIslands(plugin, args[1],
                 plugin.getSettings().isTabCompleteHideVanished(),
                 (onlinePlayer, onlineIsland) -> onlineIsland != null &&
-                        (plugin.getSettings().isRateOwnIsland() || !onlineIsland.equals(island))) : new ArrayList<>();
+                        (plugin.getSettings().isRateOwnIsland() || !onlineIsland.equals(island))) : Collections.emptyList();
     }
 
 }

@@ -1,20 +1,20 @@
 package com.bgsoftware.superiorskyblock.module.bank.commands;
 
-import com.bgsoftware.superiorskyblock.lang.Message;
 import com.bgsoftware.superiorskyblock.SuperiorSkyblockPlugin;
 import com.bgsoftware.superiorskyblock.api.island.Island;
-import com.bgsoftware.superiorskyblock.api.objects.Pair;
 import com.bgsoftware.superiorskyblock.api.wrappers.SuperiorPlayer;
-import com.bgsoftware.superiorskyblock.commands.CommandArguments;
 import com.bgsoftware.superiorskyblock.commands.CommandTabCompletes;
 import com.bgsoftware.superiorskyblock.commands.ISuperiorCommand;
+import com.bgsoftware.superiorskyblock.commands.arguments.CommandArguments;
+import com.bgsoftware.superiorskyblock.commands.arguments.IslandArgument;
+import com.bgsoftware.superiorskyblock.core.messages.Message;
 import org.bukkit.command.CommandSender;
 
-import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
-public final class CmdBalance implements ISuperiorCommand {
+public class CmdBalance implements ISuperiorCommand {
 
     @Override
     public List<String> getAliases() {
@@ -55,16 +55,16 @@ public final class CmdBalance implements ISuperiorCommand {
 
     @Override
     public void execute(SuperiorSkyblockPlugin plugin, CommandSender sender, String[] args) {
-        Pair<Island, SuperiorPlayer> arguments = args.length == 1 ? CommandArguments.getIslandWhereStanding(plugin, sender) :
+        IslandArgument arguments = args.length == 1 ? CommandArguments.getIslandWhereStanding(plugin, sender) :
                 CommandArguments.getIsland(plugin, sender, args[1]);
 
-        Island island = arguments.getKey();
+        Island island = arguments.getIsland();
 
         if (island == null)
             return;
 
         SuperiorPlayer superiorPlayer = plugin.getPlayers().getSuperiorPlayer(sender);
-        SuperiorPlayer targetPlayer = arguments.getValue();
+        SuperiorPlayer targetPlayer = arguments.getSuperiorPlayer();
 
         if (island == superiorPlayer.getIsland())
             Message.ISLAND_BANK_SHOW.send(sender, island.getIslandBank().getBalance());
@@ -77,7 +77,7 @@ public final class CmdBalance implements ISuperiorCommand {
     @Override
     public List<String> tabComplete(SuperiorSkyblockPlugin plugin, CommandSender sender, String[] args) {
         return args.length == 2 ? CommandTabCompletes.getPlayerIslandsExceptSender(plugin, sender, args[1],
-                plugin.getSettings().isTabCompleteHideVanished()) : new ArrayList<>();
+                plugin.getSettings().isTabCompleteHideVanished()) : Collections.emptyList();
     }
 
 }

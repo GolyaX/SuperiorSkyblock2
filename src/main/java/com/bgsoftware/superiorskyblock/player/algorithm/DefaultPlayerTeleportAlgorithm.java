@@ -1,33 +1,34 @@
 package com.bgsoftware.superiorskyblock.player.algorithm;
 
 import com.bgsoftware.superiorskyblock.SuperiorSkyblockPlugin;
+import com.bgsoftware.superiorskyblock.api.events.IslandSetHomeEvent;
 import com.bgsoftware.superiorskyblock.api.island.Island;
-import com.bgsoftware.superiorskyblock.api.key.Key;
 import com.bgsoftware.superiorskyblock.api.player.algorithm.PlayerTeleportAlgorithm;
-import com.bgsoftware.superiorskyblock.threads.Executor;
-import com.bgsoftware.superiorskyblock.utils.LocationUtils;
-import com.bgsoftware.superiorskyblock.utils.debug.PluginDebugger;
-import com.bgsoftware.superiorskyblock.utils.teleport.TeleportUtils;
-import com.bgsoftware.superiorskyblock.world.chunks.ChunkPosition;
-import com.bgsoftware.superiorskyblock.world.chunks.ChunksProvider;
+import com.bgsoftware.superiorskyblock.core.ChunkPosition;
+import com.bgsoftware.superiorskyblock.core.SequentialListBuilder;
+import com.bgsoftware.superiorskyblock.core.debug.PluginDebugger;
+import com.bgsoftware.superiorskyblock.core.events.EventResult;
+import com.bgsoftware.superiorskyblock.core.formatting.Formatters;
+import com.bgsoftware.superiorskyblock.core.threads.BukkitExecutor;
+import com.bgsoftware.superiorskyblock.island.IslandUtils;
+import com.bgsoftware.superiorskyblock.world.EntityTeleports;
+import com.bgsoftware.superiorskyblock.world.WorldBlocks;
+import com.bgsoftware.superiorskyblock.world.chunk.ChunkLoadReason;
+import com.bgsoftware.superiorskyblock.world.chunk.ChunksProvider;
 import com.google.common.base.Preconditions;
-import org.bukkit.Bukkit;
 import org.bukkit.Chunk;
 import org.bukkit.ChunkSnapshot;
 import org.bukkit.Location;
-import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.block.Block;
-import org.bukkit.block.BlockFace;
 import org.bukkit.entity.Player;
 
-import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
-import java.util.stream.Collectors;
 
 public class DefaultPlayerTeleportAlgorithm implements PlayerTeleportAlgorithm {
 
@@ -46,13 +47,29 @@ public class DefaultPlayerTeleportAlgorithm implements PlayerTeleportAlgorithm {
     @Override
     public CompletableFuture<Boolean> teleport(Player player, Location location) {
         CompletableFuture<Boolean> completableFuture = new CompletableFuture<>();
-        TeleportUtils.teleport(player, location, completableFuture::complete);
+        EntityTeleports.teleport(player, location, completableFuture::complete);
         return completableFuture;
     }
 
     @Override
     public CompletableFuture<Boolean> teleport(Player player, Island island) {
-        Location homeLocation = island.getIslandHome(plugin.getSettings().getWorlds().getDefaultWorld());
+        return this.teleport(player, island, plugin.getSettings().getWorlds().getDefaultWorld());
+    }
+
+    private static Location changeIslandHome(Island island, Location islandHome) {
+        EventResult<Location> eventResult = plugin.getEventsBus().callIslandSetHomeEvent(island, islandHome,
+                IslandSetHomeEvent.Reason.SAFE_HOME, null);
+        if (!eventResult.isCancelled()) {
+            island.setIslandHome(eventResult.getResult());
+            return eventResult.getResult();
+        }
+
+        return islandHome;
+    }
+
+    @Override
+    public CompletableFuture<Boolean> teleport(Player player, Island island, World.Environment environment) {
+        Location homeLocation = island.getIslandHome(environment);
 
         Preconditions.checkNotNull(homeLocation, "Cannot find a suitable home location for island " +
                 island.getUniqueId());
@@ -60,7 +77,8 @@ public class DefaultPlayerTeleportAlgorithm implements PlayerTeleportAlgorithm {
         Block islandTeleportBlock = homeLocation.getBlock();
 
         if (island.isSpawn()) {
-            PluginDebugger.debug("Action: Teleport Player, Player: " + player.getName() + ", Location: " + LocationUtils.getLocation(homeLocation));
+            PluginDebugger.debug("Action: Teleport Player, Player: " + player.getName() + ", Location: " +
+                    Formatters.LOCATION_FORMATTER.format(homeLocation));
             return teleport(player, homeLocation.add(0, 0.5, 0));
         }
 
@@ -72,22 +90,22 @@ public class DefaultPlayerTeleportAlgorithm implements PlayerTeleportAlgorithm {
                 return;
             }
 
-            Block islandCenterBlock = island.getCenter(plugin.getSettings().getWorlds().getDefaultWorld()).getBlock();
+            Block islandCenterBlock = island.getCenter(environment).getBlock();
             float rotationYaw = homeLocation.getYaw();
             float rotationPitch = homeLocation.getPitch();
 
             teleportIfSafe(player, island, islandCenterBlock, null, rotationYaw, rotationPitch,
                     (centerTeleportResult, centerTeleportLocation) -> {
                         if (centerTeleportResult) {
-                            island.setIslandHome(centerTeleportLocation);
+                            changeIslandHome(island, centerTeleportLocation);
                             completableFuture.complete(true);
                             return;
                         }
 
                         {
                             Block teleportLocationHighestBlock = islandTeleportBlock.getWorld()
-                                    .getHighestBlockAt(islandTeleportBlock.getLocation()).getRelative(BlockFace.UP);
-                            if (LocationUtils.isSafeBlock(teleportLocationHighestBlock)) {
+                                    .getHighestBlockAt(islandTeleportBlock.getLocation());
+                            if (WorldBlocks.isSafeBlock(teleportLocationHighestBlock)) {
                                 adjustAndTeleportPlayerToLocation(player, island, teleportLocationHighestBlock.getLocation(),
                                         rotationYaw, rotationPitch, completableFuture::complete);
                                 return;
@@ -95,9 +113,8 @@ public class DefaultPlayerTeleportAlgorithm implements PlayerTeleportAlgorithm {
                         }
 
                         {
-                            Block centerHighestBlock = islandCenterBlock.getWorld()
-                                    .getHighestBlockAt(islandCenterBlock.getLocation()).getRelative(BlockFace.UP);
-                            if (LocationUtils.isSafeBlock(centerHighestBlock)) {
+                            Block centerHighestBlock = islandCenterBlock.getWorld().getHighestBlockAt(islandCenterBlock.getLocation());
+                            if (WorldBlocks.isSafeBlock(centerHighestBlock)) {
                                 adjustAndTeleportPlayerToLocation(player, island, centerHighestBlock.getLocation(), rotationYaw,
                                         rotationPitch, completableFuture::complete);
                                 return;
@@ -108,12 +125,16 @@ public class DefaultPlayerTeleportAlgorithm implements PlayerTeleportAlgorithm {
                          *   Finding a new block to teleport the player to.
                          */
 
-                        List<CompletableFuture<ChunkSnapshot>> chunksToLoad = island.getAllChunksAsync(
-                                        plugin.getSettings().getWorlds().getDefaultWorld(), true, true, null)
-                                .stream().map(future -> future.thenApply(Chunk::getChunkSnapshot)).collect(Collectors.toList());
+                        World world = island.getCenter(environment).getWorld();
 
-                        Executor.createTask().runAsync(v -> {
-                            List<Location> safeLocations = new ArrayList<>();
+                        List<CompletableFuture<ChunkSnapshot>> chunksToLoad = new SequentialListBuilder<CompletableFuture<ChunkSnapshot>>()
+                                .build(IslandUtils.getAllChunksAsync(island, world, true, true, ChunkLoadReason.FIND_SAFE_SPOT, (Consumer<Chunk>) null),
+                                        future -> future.thenApply(Chunk::getChunkSnapshot));
+
+                        World islandsWorld = plugin.getGrid().getIslandsWorld(island, environment);
+
+                        BukkitExecutor.createTask().runAsync(v -> {
+                            List<Location> safeLocations = new LinkedList<>();
 
                             for (CompletableFuture<ChunkSnapshot> chunkToLoad : chunksToLoad) {
                                 ChunkSnapshot chunkSnapshot;
@@ -126,33 +147,29 @@ public class DefaultPlayerTeleportAlgorithm implements PlayerTeleportAlgorithm {
                                     continue;
                                 }
 
-                                if (LocationUtils.isChunkEmpty(null, chunkSnapshot))
+                                if (WorldBlocks.isChunkEmpty(null, chunkSnapshot))
                                     continue;
 
-                                World world = Bukkit.getWorld(chunkSnapshot.getWorldName());
-                                int worldBuildLimit = world.getMaxHeight() - 1;
-                                int worldMinLimit = plugin.getNMSWorld().getMinHeight(world);
+                                int worldBuildLimit = islandsWorld.getMaxHeight() - 1;
+                                int worldMinLimit = plugin.getNMSWorld().getMinHeight(islandsWorld);
 
                                 for (int x = 0; x < 16; x++) {
                                     for (int z = 0; z < 16; z++) {
-                                        int y = Math.min(chunkSnapshot.getHighestBlockYAt(x, z), worldBuildLimit);
-                                        Key blockKey = plugin.getNMSWorld().getBlockKey(chunkSnapshot, x, y, z);
-                                        Key belowKey = plugin.getNMSWorld().getBlockKey(chunkSnapshot, x,
-                                                y == worldMinLimit ? worldMinLimit : y - 1, z);
+                                        int y = chunkSnapshot.getHighestBlockYAt(x, z);
 
-                                        Material blockType;
-                                        Material belowType;
-
-                                        try {
-                                            blockType = Material.valueOf(blockKey.getGlobalKey());
-                                            belowType = Material.valueOf(belowKey.getGlobalKey());
-                                        } catch (IllegalArgumentException ex) {
+                                        if (y < worldMinLimit || y + 2 > worldBuildLimit)
                                             continue;
-                                        }
 
-                                        if (blockType.isSolid() || belowType.isSolid()) {
-                                            safeLocations.add(new Location(Bukkit.getWorld(chunkSnapshot.getWorldName()),
-                                                    chunkSnapshot.getX() * 16 + x, y, chunkSnapshot.getZ() * 16 + z));
+                                        int worldX = chunkSnapshot.getX() * 16 + x;
+                                        int worldZ = chunkSnapshot.getZ() * 16 + z;
+
+                                        // In some versions, the ChunkSnapshot#getHighestBlockYAt seems to return
+                                        // one block above the actual highest block. Therefore, the check is on the
+                                        // returned block and the block below it.
+                                        if (WorldBlocks.isSafeBlock(chunkSnapshot, x, y, z)) {
+                                            safeLocations.add(new Location(islandsWorld, worldX, y, worldZ));
+                                        } else if (y - 1 >= worldMinLimit && WorldBlocks.isSafeBlock(chunkSnapshot, x, y - 1, z)) {
+                                            safeLocations.add(new Location(islandsWorld, worldX, y - 1, worldZ));
                                         }
                                     }
                                 }
@@ -177,22 +194,24 @@ public class DefaultPlayerTeleportAlgorithm implements PlayerTeleportAlgorithm {
 
     private void adjustAndTeleportPlayerToLocation(Player player, Island island, Location location, float yaw,
                                                    float pitch, Consumer<Boolean> result) {
-        location = location.add(0.5, 0, 0.5);
-        location.setYaw(yaw);
-        location.setPitch(pitch);
+        Location homeLocation = location.add(0.5, 0, 0.5);
+        homeLocation.setYaw(yaw);
+        homeLocation.setPitch(pitch);
 
-        PluginDebugger.debug("Action: Teleport Player, Player: " + player.getName() + ", Location: " + LocationUtils.getLocation(location));
 
-        island.setIslandHome(location);
-        teleport(player, location.add(0, 0.5, 0));
+        PluginDebugger.debug("Action: Teleport Player, Player: " + player.getName() + ", Location: " +
+                Formatters.LOCATION_FORMATTER.format(location));
+
+        Location teleportLocation = changeIslandHome(island, homeLocation).add(0, 1.5, 0);
+        teleport(player, teleportLocation);
         if (result != null)
             result.accept(true);
     }
 
     private void teleportIfSafe(Player player, Island island, Block block, Location customLocation, float yaw, float pitch,
                                 BiConsumer<Boolean, Location> teleportResult) {
-        ChunksProvider.loadChunk(ChunkPosition.of(block), chunk -> {
-            if (!LocationUtils.isSafeBlock(block)) {
+        ChunksProvider.loadChunk(ChunkPosition.of(block), ChunkLoadReason.ENTITY_TELEPORT, chunk -> {
+            if (!WorldBlocks.isSafeBlock(block)) {
                 if (teleportResult != null)
                     teleportResult.accept(false, null);
                 return;
@@ -206,11 +225,12 @@ public class DefaultPlayerTeleportAlgorithm implements PlayerTeleportAlgorithm {
                 toTeleport = block.getLocation().add(0.5, 0, 0.5);
                 toTeleport.setYaw(yaw);
                 toTeleport.setPitch(pitch);
-                island.setIslandHome(toTeleport);
+                toTeleport = changeIslandHome(island, toTeleport);
             }
 
-            PluginDebugger.debug("Action: Teleport Player, Player: " + player.getName() + ", Location: " + LocationUtils.getLocation(toTeleport));
-            teleport(player, toTeleport.add(0, 0.5, 0));
+            PluginDebugger.debug("Action: Teleport Player, Player: " + player.getName() + ", Location: " +
+                    Formatters.LOCATION_FORMATTER.format(toTeleport));
+            teleport(player, toTeleport.add(0, 1.5, 0));
 
             if (teleportResult != null)
                 teleportResult.accept(true, toTeleport);

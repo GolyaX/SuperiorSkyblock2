@@ -40,6 +40,9 @@ BLOCK_LEVEL_WORTHLESS: '&e&l岛屿等级 | &7方块 &b{0} &7一文不值.'
 BLOCK_VALUE: '&e&l岛屿价值 | &7方块 &b{0} &7的价值为 &a{1}.'
 BLOCK_VALUE_WORTHLESS: '&e&l岛屿价值 | &7方块 &b{0} &7一文不值.'
 BONUS_SET_SUCCESS: '&e&l岛屿 | &7已成功更新岛屿奖励至 &b{0}&7.'
+BONUS_SYNC_ALL: '&e&lIsland | &7Successfully synced the island bonus to all the islands'
+BONUS_SYNC_NAME: '&e&lIsland | &7Successfully synced the island bonus to {0}.'
+BONUS_SYNC: '&e&lIsland | &7Successfully synced the island bonus to {0}''s island.'
 BORDER_PLAYER_COLOR_NAME_BLUE: 'Blue'
 BORDER_PLAYER_COLOR_NAME_RED: 'Red'
 BORDER_PLAYER_COLOR_NAME_GREEN: 'Green'
@@ -103,6 +106,7 @@ COMMAND_ARGUMENT_ALL_ISLANDS: '*'
 COMMAND_ARGUMENT_ALL_PLAYERS: '*'
 COMMAND_ARGUMENT_AMOUNT: 数量
 COMMAND_ARGUMENT_BIOME: 'biome'
+COMMAND_ARGUMENT_BORDER_COLOR: 'border-color'
 COMMAND_ARGUMENT_COMMAND: 'command...'
 COMMAND_ARGUMENT_DISCORD: Discord频道...
 COMMAND_ARGUMENT_EFFECT: 'potion-effect'
@@ -215,6 +219,7 @@ COMMAND_DESCRIPTION_ADMIN_SHOW: 查看一个岛屿的详细信息.
 COMMAND_DESCRIPTION_ADMIN_SPAWN: 传送至重生点.
 COMMAND_DESCRIPTION_ADMIN_SPY: 切换聊天监视模式
 COMMAND_DESCRIPTION_ADMIN_STATS: 查看插件数据.
+COMMAND_DESCRIPTION_ADMIN_SYNC_BONUS: 'Sync the bonus of an island with the generated worlds.'
 COMMAND_DESCRIPTION_ADMIN_SYNC_UPGRADES: 'Sync upgrade values for an island.'
 COMMAND_DESCRIPTION_ADMIN_TELEPORT: 传送到其他玩家的岛屿.
 COMMAND_DESCRIPTION_ADMIN_TITLE: 'Send a player a title.'
@@ -351,6 +356,7 @@ INTERACT_OUTSIDE_ISLAND: '&c&l错误 | &7你无法对边界范围外的东西操
 INVALID_AMOUNT: '&c&l错误 | &7未知数量 &b{0}.'
 INVALID_BIOME: '&c&l错误 | &7错误的生物群系 {0}.'
 INVALID_BLOCK: '&c&lError | &7Invalid block location {0}.'
+INVALID_BORDER_COLOR: '&c&lError | &7Invalid border color {0}.'
 INVALID_EFFECT: '&c&lError | &7Invalid effect {0}.'
 INVALID_ENTITY: '&c&l错误 | &7错误的实体类型 {0}.'
 INVALID_ENVIRONMENT: '&c&l错误 | &7未知世界 &b{0}.'
@@ -485,6 +491,7 @@ ISLAND_PREVIEW_START: |
   &e&lPreview | &7Type &a&lCONFIRM &7to create a new island, or &c&lCANCEL &7to cancel the preview mode.
   &e&lPreview | &7You cannot leave the area of the island, otherwise the preview mode will be cancelled automatically.
 ISLAND_PROTECTED: '&c&l错误 | &7岛屿保护.'
+ISLAND_PROTECTED_OPPED: '&7&oYou can bypass this restriction by using "/is admin bypass".'
 ISLAND_TEAM_STATUS_FOOTER: ''
 ISLAND_TEAM_STATUS_HEADER: '&e&l岛屿 | &b{0} &7的岛屿成员 &8[&e{1}&8/&e{2}&8]&7:'
 ISLAND_TEAM_STATUS_OFFLINE: '&c(离线)'
@@ -597,6 +604,8 @@ PERMISSION_CHANGED_NAME: '&e&l岛屿 | &7成功更新 &b{1} &7岛屿的 &b{0} &7
 PERMISSION_CHANGED_ALL: '&e&l岛屿 | &7成功为所有岛屿更新 &b{0} &7权限.'
 PERMISSIONS_RESET_PLAYER: '&e&lIsland | &7Successfully reset all the permissions for {0} to default values!'
 PERMISSIONS_RESET_ROLES: '&e&lIsland | &7Successfully reset all the permissions of the island to default values!'
+PLACEHOLDER_NO: 'No'
+PLACEHOLDER_YES: 'Yes'
 PLAYER_ALREADY_BANNED: '&c&l错误 | &7这个玩家已经被岛屿禁封了.'
 PLAYER_ALREADY_COOP: '&c&l错误 | &7这个玩家已经是岛屿的临时成员了.'
 PLAYER_ALREADY_IN_ISLAND: '&c&l错误 | &7这个玩家已经在岛屿中了.'
@@ -693,6 +702,7 @@ TRANSFER_ALREADY_LEADER: '&c&l错误 | &7你已经是这个岛屿的岛屿主了
 TRANSFER_BROADCAST: '&e&l岛屿 | &7岛屿的领导权已转让给 &b{0}.'
 UNBAN_ANNOUNCEMENT: '&e&l岛屿 | &b{1} &7将 &b{0} &7从岛屿禁封列表中移除.'
 UNCOOP_ANNOUNCEMENT: '&e&l岛屿 | &b{0} &7将 &b{1} &7从岛屿临时成员列表中移除.'
+UNCOOP_AUTO_ANNOUNCEMENT: '&e&lIsland | &7There are no island members online and therefore you were un-cooped automatically.'
 UNCOOP_LEFT_ANNOUNCEMENT: '&e&l岛屿 | &7{0} 下线了，不再是岛屿的临时成员了.'
 UNIGNORED_ISLAND: '&e&l岛屿 | &b{0} &7的岛屿现在可正常统计并排入排行榜.'
 UNIGNORED_ISLAND_NAME: '&e&l岛屿 | &7岛屿 &b{0} &7的岛屿现在可正常统计并排入排行榜.'
@@ -709,7 +719,7 @@ WARP_CATEGORY_ICON_NEW_LORE: |
 WARP_CATEGORY_ICON_NEW_NAME: '&e&lWarps | &7Enter a name (Type "-cancel" to cancel):'
 WARP_CATEGORY_ICON_NEW_TYPE: '&e&lWarps | &7Enter a new material type (Type "-cancel" to cancel):'
 WARP_CATEGORY_ICON_UPDATED: '&e&lWarps | &7Successfully updated the category''s icon.'
-WARP_CATEGORY_ILLEGAL_NAME: '&c&lError | &7You can only use alphabetical letters, numbers and ''_'' for warp category names.'
+WARP_CATEGORY_ILLEGAL_NAME: '&c&lError | &7Warp category names cannot be empty.'
 WARP_CATEGORY_NAME_TOO_LONG: '&c&lError | Warp category names cannot be longer than 255 chars.'
 WARP_CATEGORY_SLOT: '&e&lWarps | &7Enter a new slot (Type "-cancel" to cancel):'
 WARP_CATEGORY_SLOT_ALREADY_TAKEN: '&c&lError | &7This slot is already taken by another category.'
@@ -723,7 +733,7 @@ WARP_ICON_NEW_LORE: |
 WARP_ICON_NEW_NAME: '&e&lWarps | &7Enter a name (Type "-cancel" to cancel):'
 WARP_ICON_NEW_TYPE: '&e&lWarps | &7Enter a new material type (Type "-cancel" to cancel):'
 WARP_ICON_UPDATED: '&e&lWarps | &7Successfully updated the warp''s icon.'
-WARP_ILLEGAL_NAME: '&c&lError | &7You can only use alphabetical letters, numbers and ''_'' for warp names.'
+WARP_ILLEGAL_NAME: '&c&lError | &7Warp names cannot be empty.'
 WARP_LOCATION_UPDATE: '&e&lWarps | &7Successfully updated the warp''s location to your location.'
 WARP_NAME_TOO_LONG: '&c&lError | Warp names cannot be longer than 255 chars.'
 WARP_PUBLIC_UPDATE: '&e&lWarps | &7Successfully opened the warp to the public.'
@@ -738,4 +748,5 @@ WITHDRAW_ANNOUNCEMENT: '&e&l岛屿银行 | &b{0} &7从岛屿银行取出了 &e&l
 WITHDRAW_ERROR: '&c&lError | &7{0}.'
 WITHDRAWN_MONEY: '&e&l岛屿银行 | &7你从 &b{1} &7的岛屿银行取出了 &e&l${0} &7游戏币！'
 WITHDRAWN_MONEY_NAME: '&e&l岛屿银行 | &7你从 &b{1} &7岛屿银行取出了 &e&l${0} &7游戏币！'
+WORLD_NOT_ENABLED: '&e&lWorlds | &7This world is not enabled on the server.'
 WORLD_NOT_UNLOCKED: '&e&l岛屿维度 | &7你的岛屿还未解锁这个世界维度！'

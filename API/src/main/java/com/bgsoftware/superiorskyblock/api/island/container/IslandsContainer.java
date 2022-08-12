@@ -1,5 +1,6 @@
 package com.bgsoftware.superiorskyblock.api.island.container;
 
+import com.bgsoftware.superiorskyblock.api.SuperiorSkyblockAPI;
 import com.bgsoftware.superiorskyblock.api.island.Island;
 import com.bgsoftware.superiorskyblock.api.island.SortingType;
 import com.bgsoftware.superiorskyblock.api.wrappers.SuperiorPlayer;
@@ -37,9 +38,13 @@ public interface IslandsContainer {
      * Get an island by its leader's uuid.
      *
      * @param uuid The uuid of the island's leader.
+     * @deprecated Not supported anymore.
      */
     @Nullable
-    Island getIslandByLeader(UUID uuid);
+    @Deprecated
+    default Island getIslandByLeader(UUID uuid) {
+        return SuperiorSkyblockAPI.getGrid().getIsland(uuid);
+    }
 
     /**
      * Get an island by its position in the top-islands.
@@ -78,16 +83,40 @@ public interface IslandsContainer {
      *
      * @param oldLeader The uuid of the current leader.
      * @param newLeader The uuid of the new leader.
+     * @deprecated Not supported anymore.
      */
-    void transferIsland(UUID oldLeader, UUID newLeader);
+    @Deprecated
+    default void transferIsland(UUID oldLeader, UUID newLeader) {
+
+    }
+
+    /**
+     * Sort islands for the top-islands.
+     * The islands will not get sorted if only one island exists, or no changes
+     * were tracked by {@link #notifyChange(SortingType, Island)}
+     *
+     * @param sortingType The type of sorting to use.
+     * @param onFinish    Callback method
+     */
+    void sortIslands(SortingType sortingType, @Nullable Runnable onFinish);
 
     /**
      * Sort islands for the top-islands.
      *
      * @param sortingType The type of sorting to use.
-     * @param onFinish Callback method
+     * @param forceSort   Whether to force-sort the islands.
+     *                    When true, islands will get sorted even if only one island exists.
+     * @param onFinish    Callback method
      */
-    void sortIslands(SortingType sortingType, @Nullable Runnable onFinish);
+    void sortIslands(SortingType sortingType, boolean forceSort, @Nullable Runnable onFinish);
+
+    /**
+     * Notify about a change of a value for a specific sorting type for an island.
+     *
+     * @param sortingType The sorting-type.
+     * @param island      The island that had its value changed.
+     */
+    void notifyChange(SortingType sortingType, Island island);
 
     /**
      * Get all islands sorted by a specific sorting-type.
@@ -105,7 +134,7 @@ public interface IslandsContainer {
      * Add a new sorting-type.
      *
      * @param sortingType The sorting-type to add.
-     * @param sort Whether to sort the islands or not when the sorting-type is added.
+     * @param sort        Whether to sort the islands or not when the sorting-type is added.
      */
     void addSortingType(SortingType sortingType, boolean sort);
 

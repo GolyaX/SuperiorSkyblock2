@@ -149,6 +149,9 @@ rounded-island-level: false
 # Use WORTH, LEVEL, RATING or PLAYERS.
 island-top-order: 'WORTH'
 
+# Whether coop members should be enabled or not.
+coop-members: true
+
 # All settings related to island roles.
 # You can find a list of permissions here: https://wiki.bg-software.com/superiorskyblock/island-permissions
 island-roles:
@@ -320,9 +323,16 @@ worlds:
     # The default biome for the world.
     # If the biome is invalid, THE_END will be used.
     biome: THE_END
-    # Should dragon fight be enabled? This will spawn dragons for each island.
-    # This feature is in beta, expect bugs!
-    dragon-fight: false
+    # Settings related to dragon fights on the server.
+    dragon-fight:
+      # Whether dragon fights should be enabled.
+      # If enabled, each island will have it's own ender dragon to battle with.
+      enabled: false
+      # The offset of the end portal (where it should be spawning) from the middle of the island.
+      # The format is '<offset-x>, <offset-y>, <offset-z>' (may be negative).
+      # Having the offset going beyond the island-radius is an undefined behavior!
+      portal-offset: '0, 0, 0'
+
   # The difficulty of the island worlds.
   difficulty: EASY
 
@@ -565,8 +575,7 @@ default-containers:
 default-signs: [ ]
 
 # A list of commands that will be executed when an event is called.
-# You can find a list of events here:
-# https://github.com/OmerBenGera/SuperiorSkyblockAPI/tree/master/src/main/java/com/bgsoftware/superiorskyblock/api/events
+# You can find a list of events at @ https://bg-software.com/superiorskyblock/api/
 # A list of placeholders (Not all of them work for all the events):
 # %island% %player% %schematic% %enter-cause% %target% %leave-cause% %old-owner% %new-owner% %worth% %level%
 event-commands:
@@ -674,9 +683,16 @@ negative-worth: true
 negative-level: true
 
 # A list of events that will not be fired. This can increase performance.
-# You can find a list of events here:
-# https://github.com/OmerBenGera/SuperiorSkyblockAPI/tree/master/src/main/java/com/bgsoftware/superiorskyblock/api/events
+# You can find a list of events at @ https://bg-software.com/superiorskyblock/api/
 disabled-events: [ ]
+
+# A list of commands that should be disabled within the plugin.
+# You can add a label or an alias of a command to disable it.
+disabled-commands: [ ]
+
+# List of plugins that their hooks should not be enabled.
+# Simply add the plugin's name in order to prevent it from enabling.
+disabled-hooks: [ ]
 
 # Should there be a schematic-name argument in the create command?
 # When enabled, people will be able to skip the create menu and create islands directly with the command.
@@ -690,6 +706,8 @@ island-chests:
   # You can set this value to 0 to not have any pages by default.
   default-pages: 0
   # Default size for the pages.
+  # This is the default number of rows for the chests.
+  # This number must be between 1 and 6.
   default-size: 3
 
 # Custom aliases for plugin's commands.
@@ -737,3 +755,25 @@ public-warps: false
 # Timeout for the recalculate task, in seconds.
 # If you want to disable the timeout, set this to 0 or below.
 recalc-task-timeout: 10
+
+# Detect the player's language automatically when he first joins the server.
+# The language will only get changed if there is a valid translation available,
+# otherwise the default language will be chosen for the player.
+auto-language-detection: true
+
+# Automatically uncoop players when there are no island members left online that can remove uncoop players.
+auto-uncoop-when-alone: false
+
+# The way members of islands will be sorted in top islands when using the {4} placeholder.
+# The followings are available:
+# NAMES - Sort members by their names.
+# ROLES - Sort members by their island roles.
+island-top-members-sorting: NAMES
+
+# Limit of the amount of bossbar tasks each player can have at the same time.
+# Once the limit is reached, the old ones will get removed.
+bossbar-limit: 1
+
+# Delete unsafe warps when players try to teleport to them automatically.
+# If disabled, warps that are unsafe will stay until players manually delete them.
+delete-unsafe-warps: true

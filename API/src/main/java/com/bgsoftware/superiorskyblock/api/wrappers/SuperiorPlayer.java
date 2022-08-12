@@ -1,13 +1,13 @@
 package com.bgsoftware.superiorskyblock.api.wrappers;
 
-import com.bgsoftware.superiorskyblock.api.data.DatabaseBridge;
-import com.bgsoftware.superiorskyblock.api.data.PlayerDataHandler;
+import com.bgsoftware.superiorskyblock.api.data.IDatabaseBridgeHolder;
 import com.bgsoftware.superiorskyblock.api.enums.BorderColor;
 import com.bgsoftware.superiorskyblock.api.enums.HitActionResult;
 import com.bgsoftware.superiorskyblock.api.island.Island;
 import com.bgsoftware.superiorskyblock.api.island.IslandPrivilege;
 import com.bgsoftware.superiorskyblock.api.island.PlayerRole;
 import com.bgsoftware.superiorskyblock.api.missions.IMissionsHolder;
+import com.bgsoftware.superiorskyblock.api.persistence.IPersistentDataHolder;
 import org.bukkit.Location;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.World;
@@ -20,7 +20,7 @@ import java.util.Locale;
 import java.util.UUID;
 import java.util.function.Consumer;
 
-public interface SuperiorPlayer extends IMissionsHolder {
+public interface SuperiorPlayer extends IMissionsHolder, IPersistentDataHolder, IDatabaseBridgeHolder {
 
     /*
      *   General Methods
@@ -54,6 +54,13 @@ public interface SuperiorPlayer extends IMissionsHolder {
     void updateLastTimeStatus();
 
     /**
+     * Set the last time player joined or left the server.
+     *
+     * @param lastTimeStatus The time to set.
+     */
+    void setLastTimeStatus(long lastTimeStatus);
+
+    /**
      * Get the last time player joined or left the server.
      */
     long getLastTimeStatus();
@@ -63,6 +70,12 @@ public interface SuperiorPlayer extends IMissionsHolder {
      * When the player is offline, nothing will happen.
      */
     void updateName();
+
+    /**
+     * Set the cached name with the given name.
+     * When the player will join the server, it will be synced again with his correct name.
+     */
+    void setName(String name);
 
     /**
      * Get the player object.
@@ -188,10 +201,27 @@ public interface SuperiorPlayer extends IMissionsHolder {
     /**
      * Teleport the player to an island.
      *
+     * @param island      The island to teleport the player to.
+     * @param environment The environment to teleport the player to.
+     */
+    void teleport(Island island, World.Environment environment);
+
+    /**
+     * Teleport the player to an island.
+     *
      * @param island         The island to teleport the player to.
      * @param teleportResult Consumer that will be ran when task is finished.
      */
     void teleport(Island island, @Nullable Consumer<Boolean> teleportResult);
+
+    /**
+     * Teleport the player to an island.
+     *
+     * @param island         The island to teleport the player to.
+     * @param environment    The environment to teleport the player to.
+     * @param teleportResult Consumer that will be ran when task is finished.
+     */
+    void teleport(Island island, World.Environment environment, @Nullable Consumer<Boolean> teleportResult);
 
     /**
      * Check whether or not the player is inside their island.
@@ -282,7 +312,7 @@ public interface SuperiorPlayer extends IMissionsHolder {
     void setUserLocale(Locale locale);
 
     /**
-     * Check whether or not the world border is enabled for the player.
+     * Check whether the world border is enabled for the player.
      */
     boolean hasWorldBorderEnabled();
 
@@ -292,6 +322,13 @@ public interface SuperiorPlayer extends IMissionsHolder {
     void toggleWorldBorder();
 
     /**
+     * Set whether the world border is enabled for the player.
+     *
+     * @param enabled true to enable borders.
+     */
+    void setWorldBorderEnabled(boolean enabled);
+
+    /**
      * Update world border for this player.
      *
      * @param island The island the player should see the border of.
@@ -299,17 +336,24 @@ public interface SuperiorPlayer extends IMissionsHolder {
     void updateWorldBorder(@Nullable Island island);
 
     /**
-     * Check whether or not the blocks stacker mode is enabled for the player.
+     * Check whether the blocks-stacker mode is enabled for the player.
      */
     boolean hasBlocksStackerEnabled();
 
     /**
-     * Toggle the blocks stacker for the player.
+     * Toggle the blocks-stacker for the player.
      */
     void toggleBlocksStacker();
 
     /**
-     * Check whether or not the schematic mode is enabled for the player.
+     * Set whether the blocks-stacker mode is enabled for the player.
+     *
+     * @param enabled true to enable blocks-stacker mode.
+     */
+    void setBlocksStacker(boolean enabled);
+
+    /**
+     * Check whether the schematic mode is enabled for the player.
      */
     boolean hasSchematicModeEnabled();
 
@@ -319,7 +363,14 @@ public interface SuperiorPlayer extends IMissionsHolder {
     void toggleSchematicMode();
 
     /**
-     * Check whether or not the team chat is enabled for the player.
+     * Set whether the schematic mode is enabled for the player.
+     *
+     * @param enabled true to enable schematic mode.
+     */
+    void setSchematicMode(boolean enabled);
+
+    /**
+     * Check whether the team chat is enabled for the player.
      */
     boolean hasTeamChatEnabled();
 
@@ -329,7 +380,14 @@ public interface SuperiorPlayer extends IMissionsHolder {
     void toggleTeamChat();
 
     /**
-     * Check whether or not the bypass mode is enabled for the player.
+     * Set whether the schematic mode is enabled for the player.
+     *
+     * @param enabled true to enable schematic mode.
+     */
+    void setTeamChat(boolean enabled);
+
+    /**
+     * Check whether the bypass mode is enabled for the player.
      */
     boolean hasBypassModeEnabled();
 
@@ -337,6 +395,13 @@ public interface SuperiorPlayer extends IMissionsHolder {
      * Toggle the bypass mode for the player.
      */
     void toggleBypassMode();
+
+    /**
+     * Set whether the bypass mode is enabled for the player.
+     *
+     * @param enabled true to enable bypass mode.
+     */
+    void setBypassMode(boolean enabled);
 
     /**
      * Check whether or not the player has their panel toggled.
@@ -349,7 +414,7 @@ public interface SuperiorPlayer extends IMissionsHolder {
     void setToggledPanel(boolean toggledPanel);
 
     /**
-     * Set whether or not the player has flying enabled.
+     * Set whether the player has flying enabled.
      */
     boolean hasIslandFlyEnabled();
 
@@ -359,7 +424,14 @@ public interface SuperiorPlayer extends IMissionsHolder {
     void toggleIslandFly();
 
     /**
-     * Check whether or not the player has admin spy mode enabled.
+     * Set whether the player has flying enabled.
+     *
+     * @param enabled true to enable flying.
+     */
+    void setIslandFly(boolean enabled);
+
+    /**
+     * Check whether the player has admin spy mode enabled.
      */
     boolean hasAdminSpyEnabled();
 
@@ -367,6 +439,13 @@ public interface SuperiorPlayer extends IMissionsHolder {
      * Toggle admin spy mode.
      */
     void toggleAdminSpy();
+
+    /**
+     * Set whether the player has admin spy mode enabled.
+     *
+     * @param enabled true to enable admin spy mode.
+     */
+    void setAdminSpy(boolean enabled);
 
     /**
      * Get the border color of the player.
@@ -468,18 +547,5 @@ public interface SuperiorPlayer extends IMissionsHolder {
      * Merge another player into this object.
      */
     void merge(SuperiorPlayer otherPlayer);
-
-    /**
-     * Get the data handler of the object.
-     *
-     * @deprecated See getDatabaseBridge
-     */
-    @Deprecated
-    PlayerDataHandler getDataHandler();
-
-    /**
-     * Get the database bridge of the player.
-     */
-    DatabaseBridge getDatabaseBridge();
 
 }

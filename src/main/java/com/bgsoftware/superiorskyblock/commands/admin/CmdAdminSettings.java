@@ -1,16 +1,15 @@
 package com.bgsoftware.superiorskyblock.commands.admin;
 
-import com.bgsoftware.superiorskyblock.lang.Message;
 import com.bgsoftware.superiorskyblock.SuperiorSkyblockPlugin;
+import com.bgsoftware.superiorskyblock.core.messages.Message;
 import com.bgsoftware.superiorskyblock.commands.ISuperiorCommand;
-import com.bgsoftware.superiorskyblock.menu.impl.internal.SuperiorMenuSettings;
+import com.bgsoftware.superiorskyblock.core.menu.impl.internal.SuperiorMenuSettings;
 import org.bukkit.command.CommandSender;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-public final class CmdAdminSettings implements ISuperiorCommand {
+public class CmdAdminSettings implements ISuperiorCommand {
 
     @Override
     public List<String> getAliases() {
@@ -54,7 +53,7 @@ public final class CmdAdminSettings implements ISuperiorCommand {
 
     @Override
     public List<String> tabComplete(SuperiorSkyblockPlugin plugin, CommandSender sender, String[] args) {
-        return new ArrayList<>();
+        return Collections.emptyList();
     }
 
 }

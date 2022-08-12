@@ -3,12 +3,18 @@ package com.bgsoftware.superiorskyblock.module.upgrades;
 import com.bgsoftware.common.config.CommentedConfiguration;
 import com.bgsoftware.superiorskyblock.SuperiorSkyblockPlugin;
 import com.bgsoftware.superiorskyblock.api.commands.SuperiorCommand;
-import com.bgsoftware.superiorskyblock.api.key.Key;
-import com.bgsoftware.superiorskyblock.api.objects.Pair;
+import com.bgsoftware.superiorskyblock.api.key.KeyMap;
 import com.bgsoftware.superiorskyblock.api.upgrades.cost.UpgradeCost;
 import com.bgsoftware.superiorskyblock.api.upgrades.cost.UpgradeCostLoadException;
 import com.bgsoftware.superiorskyblock.api.upgrades.cost.UpgradeCostLoader;
-import com.bgsoftware.superiorskyblock.key.dataset.KeyMap;
+import com.bgsoftware.superiorskyblock.core.debug.PluginDebugger;
+import com.bgsoftware.superiorskyblock.core.formatting.Formatters;
+import com.bgsoftware.superiorskyblock.core.key.KeyImpl;
+import com.bgsoftware.superiorskyblock.core.key.KeyMapImpl;
+import com.bgsoftware.superiorskyblock.island.container.value.Value;
+import com.bgsoftware.superiorskyblock.island.upgrade.SUpgrade;
+import com.bgsoftware.superiorskyblock.island.upgrade.SUpgradeLevel;
+import com.bgsoftware.superiorskyblock.island.upgrade.UpgradeRequirement;
 import com.bgsoftware.superiorskyblock.module.BuiltinModule;
 import com.bgsoftware.superiorskyblock.module.upgrades.commands.CmdAdminRankup;
 import com.bgsoftware.superiorskyblock.module.upgrades.commands.CmdAdminSetUpgrade;
@@ -22,11 +28,6 @@ import com.bgsoftware.superiorskyblock.module.upgrades.type.UpgradeTypeEntityLim
 import com.bgsoftware.superiorskyblock.module.upgrades.type.UpgradeTypeIslandEffects;
 import com.bgsoftware.superiorskyblock.module.upgrades.type.UpgradeTypeMobDrops;
 import com.bgsoftware.superiorskyblock.module.upgrades.type.UpgradeTypeSpawnerRates;
-import com.bgsoftware.superiorskyblock.upgrade.SUpgrade;
-import com.bgsoftware.superiorskyblock.upgrade.SUpgradeLevel;
-import com.bgsoftware.superiorskyblock.upgrade.UpgradeValue;
-import com.bgsoftware.superiorskyblock.utils.StringUtils;
-import com.bgsoftware.superiorskyblock.utils.debug.PluginDebugger;
 import org.bukkit.World;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.event.Listener;
@@ -35,19 +36,21 @@ import org.bukkit.potion.PotionEffectType;
 import javax.annotation.Nullable;
 import java.io.File;
 import java.math.BigDecimal;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-public final class UpgradesModule extends BuiltinModule {
+public class UpgradesModule extends BuiltinModule {
 
     private static final int MAX_UPGRADES_NAME_LENGTH = 255;
 
-    private final List<IUpgradeType> enabledUpgrades = new ArrayList<>();
+    private final List<IUpgradeType> enabledUpgrades = new LinkedList<>();
 
     public UpgradesModule() {
         super("upgrades");
@@ -70,9 +73,15 @@ public final class UpgradesModule extends BuiltinModule {
     }
 
     @Override
+    public void loadData(SuperiorSkyblockPlugin plugin) {
+        // Do nothing.
+    }
+
+    @Override
     public Listener[] getModuleListeners(SuperiorSkyblockPlugin plugin) {
         return !isEnabled() ? null : enabledUpgrades.stream()
                 .map(IUpgradeType::getListener)
+                .filter(Objects::nonNull)
                 .toArray(Listener[]::new);
     }
 
@@ -182,45 +191,46 @@ public final class UpgradesModule extends BuiltinModule {
 
         List<String> commands = levelSection.getStringList("commands");
         String permission = levelSection.getString("permission", "");
-        Set<Pair<String, String>> requirements = new HashSet<>();
+        Set<UpgradeRequirement> requirements = new HashSet<>();
         for (String line : levelSection.getStringList("required-checks")) {
             String[] sections = line.split(";");
-            requirements.add(new Pair<>(sections[0], StringUtils.translateColors(sections[1])));
+            requirements.add(new UpgradeRequirement(sections[0], Formatters.COLOR_FORMATTER.format(sections[1])));
         }
-        UpgradeValue<Double> cropGrowth = new UpgradeValue<>(levelSection.getDouble("crop-growth", -1D), true);
-        UpgradeValue<Double> spawnerRates = new UpgradeValue<>(levelSection.getDouble("spawner-rates", -1D), true);
-        UpgradeValue<Double> mobDrops = new UpgradeValue<>(levelSection.getDouble("mob-drops", -1D), true);
-        UpgradeValue<Integer> teamLimit = new UpgradeValue<>(levelSection.getInt("team-limit", -1), true);
-        UpgradeValue<Integer> warpsLimit = new UpgradeValue<>(levelSection.getInt("warps-limit", -1), true);
-        UpgradeValue<Integer> coopLimit = new UpgradeValue<>(levelSection.getInt("coop-limit", -1), true);
-        UpgradeValue<Integer> borderSize = new UpgradeValue<>(levelSection.getInt("border-size", -1), true);
-        UpgradeValue<BigDecimal> bankLimit = new UpgradeValue<>(new BigDecimal(levelSection.getString("bank-limit", "-1")), true);
-        KeyMap<Integer> blockLimits = new KeyMap<>();
+
+        Value<Double> cropGrowth = Value.syncedFixed(levelSection.getDouble("crop-growth", -1D));
+        Value<Double> spawnerRates = Value.syncedFixed(levelSection.getDouble("spawner-rates", -1D));
+        Value<Double> mobDrops = Value.syncedFixed(levelSection.getDouble("mob-drops", -1D));
+        Value<Integer> teamLimit = Value.syncedFixed(levelSection.getInt("team-limit", -1));
+        Value<Integer> warpsLimit = Value.syncedFixed(levelSection.getInt("warps-limit", -1));
+        Value<Integer> coopLimit = Value.syncedFixed(levelSection.getInt("coop-limit", -1));
+        Value<Integer> borderSize = Value.syncedFixed(levelSection.getInt("border-size", -1));
+        Value<BigDecimal> bankLimit = Value.syncedFixed(new BigDecimal(levelSection.getString("bank-limit", "-1")));
+        KeyMap<Integer> blockLimits = KeyMapImpl.createHashMap();
         if (levelSection.contains("block-limits")) {
             for (String block : levelSection.getConfigurationSection("block-limits").getKeys(false)) {
-                blockLimits.put(block, levelSection.getInt("block-limits." + block));
-                plugin.getBlockValues().addCustomBlockKey(Key.of(block));
+                blockLimits.put(KeyImpl.of(block), levelSection.getInt("block-limits." + block));
+                plugin.getBlockValues().addCustomBlockKey(KeyImpl.of(block));
             }
         }
-        KeyMap<Integer> entityLimits = new KeyMap<>();
+        KeyMap<Integer> entityLimits = KeyMapImpl.createHashMap();
         if (levelSection.contains("entity-limits")) {
             for (String entity : levelSection.getConfigurationSection("entity-limits").getKeys(false))
-                entityLimits.put(entity.toUpperCase(), levelSection.getInt("entity-limits." + entity));
+                entityLimits.put(KeyImpl.of(entity), levelSection.getInt("entity-limits." + entity));
         }
         KeyMap<Integer>[] generatorRates = new KeyMap[World.Environment.values().length];
         if (levelSection.contains("generator-rates")) {
             for (String blockOrEnv : levelSection.getConfigurationSection("generator-rates").getKeys(false)) {
                 try {
-                    int index = World.Environment.valueOf(blockOrEnv.toUpperCase()).ordinal();
+                    int index = World.Environment.valueOf(blockOrEnv.toUpperCase(Locale.ENGLISH)).ordinal();
                     for (String block : levelSection.getConfigurationSection("generator-rates." + blockOrEnv).getKeys(false)) {
                         if (generatorRates[index] == null)
-                            generatorRates[index] = new KeyMap<>();
-                        generatorRates[index].put(block, levelSection.getInt("generator-rates." + blockOrEnv + "." + block));
+                            generatorRates[index] = KeyMapImpl.createHashMap();
+                        generatorRates[index].put(KeyImpl.of(block), levelSection.getInt("generator-rates." + blockOrEnv + "." + block));
                     }
                 } catch (Exception ex) {
                     if (generatorRates[0] == null)
-                        generatorRates[0] = new KeyMap<>();
-                    generatorRates[0].put(blockOrEnv, levelSection.getInt("generator-rates." + blockOrEnv));
+                        generatorRates[0] = KeyMapImpl.createHashMap();
+                    generatorRates[0].put(KeyImpl.of(blockOrEnv), levelSection.getInt("generator-rates." + blockOrEnv));
                 }
             }
         }
@@ -256,7 +266,7 @@ public final class UpgradesModule extends BuiltinModule {
 
             super.config.set("upgrades", config.get("upgrades"));
 
-            File moduleConfigFile = new File(getDataFolder(), "config.yml");
+            File moduleConfigFile = new File(getModuleFolder(), "config.yml");
 
             try {
                 super.config.save(moduleConfigFile);
